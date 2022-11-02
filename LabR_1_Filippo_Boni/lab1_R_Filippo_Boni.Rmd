@@ -1,0 +1,628 @@
+---
+title: "R Notebook"
+jupyter:
+  kernelspec:
+    display_name: R
+    language: R
+    name: ir
+output:
+    ipynbdocument::ipynb_document
+---
+
+```{r, echo=FALSE}
+knitr::opts_chunk$set(error = TRUE)
+```
+
+```{r}
+rm(list=ls())
+```
+
+
+```{r}
+library(tibble)
+library(dplyr)
+library(ggplot2)
+```
+
+#Exercise 1
+
+I download the dataset in a table.
+
+```{r}
+
+data <- read.table("table_lake_scotland.txt", header=T,sep = ",")
+data
+
+```
+
+I convert the table in a dataframe.
+
+```{r}
+
+df_lake <- data.frame(data)
+df_lake
+```
+
+##Point 1.
+
+I find the maximum value of the lake value, print it and the corresponding row.
+
+```{r}
+
+max_volume<-max(df_lake$Volume.km..) #find the maximum
+max_volume
+row_max_volume<-df_lake[df_lake$Volume.km.. == max_volume,] #selecct the corresponding row
+row_max_volume
+
+```
+
+I select the variables extracted to present the result.
+
+```{r}
+name_max_volume<-row_max_volume$Loch #select the name of the lake
+name_max_volume
+value_max_volume<-row_max_volume$Volume.km.. #select the maximum volume 
+value_max_volume
+```
+
+
+```{r}
+cat("The lake with the largest volume is", name_max_volume, "with a volume of", value_max_volume, "km^3")
+```
+
+I repeat the the process in order to find the minimum value of the volume and the maximum and minimum value of the area.
+
+Minimum volume:
+
+```{r}
+min_volume<-min(df_lake$Volume.km..) 
+min_volume
+row_min_volume<-df_lake[df_lake$Volume.km.. == min_volume,] 
+row_min_volume
+
+name_min_volume<-row_min_volume$Loch
+name_min_volume
+value_min_volume<-row_min_volume$Volume.km..
+value_min_volume
+```
+
+```{r}
+cat("The lake with the smallest volume is", name_min_volume, "with a volume of", value_min_volume, "km^3")
+
+```
+
+Maximum Area:
+
+```{r}
+max_area<-max(df_lake$Area.km2.) 
+max_area
+row_max_area<-df_lake[df_lake$Area.km2. == max_area,] 
+row_max_area
+
+name_max_area<-row_max_area$Loch
+name_max_area
+value_max_area<-row_max_area$Area.km2.
+value_max_area
+```
+
+```{r}
+cat("The lake with the largest area is", name_max_area, "with an area of", value_max_area, "km^2")
+```
+
+Minimum Area:
+
+```{r}
+min_area<-min(df_lake$Area.km2.) 
+min_area
+row_min_area<-df_lake[df_lake$Area.km2. == min_area,] 
+row_min_area
+
+name_min_area<-row_min_area$Loch
+name_min_area
+value_min_area<-row_min_area$Area.km2.
+value_min_area
+```
+
+```{r}
+cat("The lake with the smallest area is", name_min_area, "with an area of", value_min_area, "km^2")
+```
+
+
+##Point 2
+
+I order the dataframe with respect to the area I use the function order(). The area columns is sorted in a decreasing order of values.
+
+```{r}
+df_area_sorted<-df_lake[order(df_lake$Area.km2., decreasing =TRUE), ]  
+df_area_sorted
+```
+In order to find the largest and smallest area I print the first and the last values of the ordered dataframe.
+
+```{r}
+cat("The lake with the smallest area is", df_area_sorted[dim(df_area_sorted)[1],]$Loch, "with an area of", df_area_sorted[dim(df_area_sorted)[1],]$Area.km2., "km^2")
+
+```
+
+With the value "dim(df_area_sorted)[1]" I find and select the last row of the dataframe than from the selected row I select the needed values. I repeat the procedure for the first row.
+
+```{r}
+cat("The lake with the largest area is", df_area_sorted[1,]$Loch, "with an area of", df_area_sorted[1,]$Area.km2., "km^2")
+
+```
+
+The same idea is applied to find the second largest area
+
+```{r}
+
+cat("The lake with the second largest area is", df_area_sorted[2,]$Loch, "with an area of", df_area_sorted[2,]$Area.km2., "km^2")
+
+```
+
+
+##Point 3
+
+```{r}
+total_area<-sum(df_area_sorted$Area.km2.)  #calculating the sum
+total_area
+```
+
+```{r}
+cat("The total area of the Scotland lakes is", total_area, "km^2")
+```
+
+
+
+#Exercise 2
+
+I download the dataset with read.csv and I convert it in a dataframe.
+
+```{r}
+data <- read.csv("crude-oil-prices.csv", header=T,sep = ",")
+data
+```
+##Point 1
+
+```{r}
+df_oil <- data.frame(data) #creating a dataframe from the table
+df_oil
+```
+##Point 2
+
+```{r}
+ggplot(df_oil,aes(x=Year,y=df_oil$Oil...Crude.prices.since.1861..current...,group=1))+geom_line(col='red')+geom_point(col='blue',size=0.5,shape=4)+scale_x_continuous(name="Year",breaks=seq(1860,2020,10))+scale_y_continuous(name="Oil price",breaks=seq(0,120,10))+ggtitle("Oil price in time(years)")
+
+```
+##Point 3
+
+I find the maximum value of the oil price using the max() function. Once found I select the corresponding row and print the corresponding year.
+
+```{r}
+
+max_oil_price<-max(df_oil$Oil...Crude.prices.since.1861..current...) #selecting the max value
+
+row_max_oil_price<-df_oil[df_oil$Oil...Crude.prices.since.1861..current...== max_oil_price,] #selecting the corresponding row
+
+year_max_oil_price<-row_max_oil_price$Year #selecting the corresponding year
+
+
+```
+
+```{r}
+
+cat("The maximum oil price was", max_oil_price,". It occurred in the year", year_max_oil_price ,".")
+
+```
+
+##Point 4
+
+In order to calculate the derivative (using the formula indicated) I create two vectors: the first is the oil prices column but the last element (using the expression dim(df_oil)[1]-1), the second is the oil prices column but the first element. Than I create a new vector of derivative by subtracting the first vector to the second vector. Than I print the plot.
+
+```{r}
+oil_price_1<-df_oil$Oil...Crude.prices.since.1861..current...[1:(dim(df_oil)[1]-1)] #select the needed value
+oil_price_2<-df_oil$Oil...Crude.prices.since.1861..current...[2:(dim(df_oil)[1])]
+
+derivative_oil_price<-oil_price_2-oil_price_1 #calculate the derivative
+```
+
+Since there is not a record before the year 1861 the years considered in the plot go from 1862 to the last record year.
+
+```{r}
+derivative_years<-df_oil$Year[2:dim(df_oil)[1]] #selecting the years needed
+derivative_years
+length(derivative_years)
+length(derivative_oil_price)
+```
+
+
+```{r}
+ggplot(df_oil[2:dim(df_oil)[1],],aes(x=derivative_years,y=derivative_oil_price,group=1))+geom_line(col='red')+geom_point(col='blue',size=0.5,shape=4)+scale_x_continuous(name="Year",breaks=seq(1860,2020,10))+scale_y_continuous(name="Oil price derivative")+ggtitle("Oil price derivative in time(years)")
+
+```
+
+
+#Exercise 3
+
+I download the dataset with read.csv and I convert it in a tibble.
+
+
+```{r}
+data <- read.csv("coal-production-by-country.csv", header=T,sep = ",")
+data
+```
+
+##Point 1
+
+```{r}
+
+tb_coal <- tibble(data)
+tb_coal
+```
+
+
+##Point 2
+
+
+In order to calculate the frequency of a country I use the funtion count(). It has two inputs: a dataframe and the variable of the dataframe of which the frequency is needed( in this case the country varaible named as Entity). The output of the function is a dataframe with two columns: the first contains the different values of the variable chosen, the second is their frequencies. The documentation can be found at this link: https://www.rdocumentation.org/packages/plyr/versions/1.8.6/topics/count .
+
+```{r}
+country_count_dataframe<-count(tb_coal,vars=Entity)
+country_count_dataframe
+```
+The barplot is printed.
+
+```{r fig.width=4,fig.height=12}
+ggplot(country_count_dataframe,aes(x=n, y=vars))+geom_bar(stat='identity',col='navy',fill='orchid2') + 
+xlab("Frequency")+ ylab("Country")+
+geom_text(aes(label=n, size=0.5), hjust=0, size=3, color='black')
+
+```
+I consider the values with a corresponding year>= 1970.
+
+```{r}
+
+tb_coal <- tb_coal[tb_coal$Year>= 1970,] #selecting the values by using a condition on tibble rows
+tb_coal
+
+```
+
+
+
+In order to find the top 5 countries for production, I create a new tibble without the records corresponding to the continents. In order to do that I create a vector containing a list of strings indicating the continents in the tibble. Than I eliminate the rows with an Entity value equal to one element of the vector. 
+
+```{r}
+
+continents<-c("OECD","Africa","Asia and Oceania","Asia Pacific","World","EU-28","Europe (other)","Other Africa" ,"CIS","Other CIS","OPEC","Other Asia & Pacific","Other S. & Cent. America","Central and South America","Europe","Eurasia","North America") #ccontinents array 
+
+tb_coal_countries<-tb_coal[!(tb_coal$Entity %in% continents),] #selecting the values by using a condition on the tibble rows
+tb_coal_countries$Entity
+```
+
+I create a vector of countries using the function unique(), which returns a vector, data frame or array with duplicate elements/rows removed.
+
+```{r}
+countries<-unique(tb_coal_countries$Entity)
+```
+
+In order to calculate the integrated coal production I use a for loop sums the value in the Coal production column for each country. Than this values are put in a vector called 'total_integrated_production'
+
+```{r}
+
+total_integrated_production<-c() #initializing the needed values 
+s<-0
+
+for (i in countries) {
+  
+  single_country_dataframe<-tb_coal_countries[tb_coal_countries$Entity==i,] #selecting the records with a specific country 
+  
+  s<-sum(single_country_dataframe$Coal.production..TWh.) #summing the values of producction for the country selected
+  
+  total_integrated_production<-append(total_integrated_production,s) #apending the value to the list
+  
+  s<-0
+  
+}
+
+```
+
+Here the procedure to select the top 5 productors is shown. As first step I sort in a increasing order the values of the vector 'total_integrated_production' and take the last 5 values which correspond to the 5 highest values. Than using the function which() I find the indexes in the  vector 'total_integrated_production' where there are the 5 values found. Finally I select from the vector countries the element corresponding to that indexes. 
+
+
+```{r}
+top_5_productions<- tail(sort(total_integrated_production),5) #sorting the list and considering just the needed values
+top_5_productions
+
+index_1_productor<-which(total_integrated_production == top_5_productions[5]) #finding the indexes
+index_2_productor<-which(total_integrated_production == top_5_productions[4])
+index_3_productor<-which(total_integrated_production == top_5_productions[3])
+index_4_productor<-which(total_integrated_production == top_5_productions[2])
+index_5_productor<-which(total_integrated_production == top_5_productions[1])
+
+top_5_productor_index<-c(index_1_productor,index_2_productor,index_3_productor,index_4_productor,index_5_productor) 
+
+top_5_productor<-countries[top_5_productor_index] #selecting the values with a specific index
+top_5_productor
+```
+
+```{r}
+
+cat('the first coal productor is', top_5_productor[1], ' with a production of', top_5_productions[5], '(TWh)' )
+cat('\n')
+cat('the second coal productor is', top_5_productor[2], ' with a production of', top_5_productions[4], '(TWh)' )
+cat('\n')
+cat('the third coal productor is', top_5_productor[3], ' with a production of', top_5_productions[3], '(TWh)' )
+cat('\n')
+cat('the fourth coal productor is', top_5_productor[4], ' with a production of', top_5_productions[2], '(TWh)' )
+cat('\n')
+cat('the fifth coal productor is', top_5_productor[5], ' with a production of', top_5_productions[1], '(TWh)' )
+
+```
+
+Than I plot the results obtained.
+
+```{r}
+
+tb_china<-tb_coal[tb_coal$Entity=='China',] 
+ggplot(tb_china,aes(x=Year,y=Coal.production..TWh.))+geom_line(col='red')+geom_point(col='green')+scale_y_continuous(name="Coal Production", breaks=seq(0, 23000, 1000))+scale_x_continuous(name="Year", breaks=seq(1980, 2020, 5))+ggtitle("China coal production in time(years)")
+
+
+```
+
+```{r}
+tb_us<-tb_coal[tb_coal$Entity=='United States',]
+ggplot(tb_us,aes(x=Year,y=Coal.production..TWh.))+geom_line(col='red')+geom_point(col='green')+scale_y_continuous(name="Coal Production", breaks=seq(0, 7000, 200))+scale_x_continuous(name="Year", breaks=seq(1980, 2020, 5))+ggtitle("USA coal production in time(years)")
+
+```
+```{r}
+tb_russia<-tb_coal[tb_coal$Entity=='Russia',]
+ggplot(tb_russia,aes(x=Year,y=Coal.production..TWh.))+geom_line(col='red')+geom_point(col='green')+scale_y_continuous(name="Coal Production", breaks=seq(0, 7000, 200))+scale_x_continuous(name="Year", breaks=seq(1960, 2020, 5))+ggtitle("Russia coal production in time(years)")
+
+```
+```{r}
+tb_aus<-tb_coal[tb_coal$Entity=='Australia',]
+ggplot(tb_aus,aes(x=Year,y=Coal.production..TWh.))+geom_line(col='red')+geom_point(col='green')+scale_y_continuous(name="Coal Production", breaks=seq(0, 7000, 200))+scale_x_continuous(name="Year", breaks=seq(1980, 2020, 5))+ggtitle("Australia coal production in time(years)")
+
+```
+
+```{r}
+tb_in<-tb_coal[tb_coal$Entity=='India',]
+ggplot(tb_in,aes(x=Year,y=Coal.production..TWh.))+geom_line(col='red')+geom_point(col='green')+scale_y_continuous(name="Coal Production", breaks=seq(0, 7000, 200))+scale_x_continuous(name="Year", breaks=seq(1980, 2020, 5))+ggtitle("India coal production in time(years)")
+
+```
+
+##Point 5
+
+The process used for the productors is repeated to calculate the cumulative sum by year, but at each iteration of the for loop the value of the sum 's' is not initialized to zero in order to calculate the cumulative sum.
+
+```{r}
+
+tb_coal_year<-tb_coal[order(tb_coal$Year),]
+tb_coal_year
+s<-0
+```
+
+```{r}
+cumulative_production_by_year<-c()
+year<-unique(tb_coal$Year)
+year
+for (i in year) {
+  
+  single_year_dataframe<-tb_coal_countries[tb_coal_countries$Year==i,] 
+  
+  s<-sum(single_year_dataframe$Coal.production..TWh.)+s
+  
+  cumulative_production_by_year<-append(cumulative_production_by_year,s)
+}
+
+cumulative_production_by_year
+
+```
+
+```{r}
+
+ggplot(,aes(x=year,y=cumulative_production_by_year))+geom_line(col='red')+geom_point(col='green')+scale_y_continuous(name="Cumulative Sum of World Production by Year",breaks=seq(0, 1400000,100000))+scale_x_continuous(name="Year", breaks=seq(1965, 2020, 5))
+
+```
+
+
+#Exercise 4
+
+I download the dataset with read.csv and I convert it in a tibble.
+
+
+```{r}
+data <- read.csv("vaccinations-by-manufacturer.csv", header=T,sep = ",")
+data
+```
+
+
+```{r}
+
+tb_vaccine <- tibble(data)
+tb_vaccine
+```
+##Point 1
+
+Since I need to repeat the same procedure for other two countries I define the needed operations in a function, in order to repeat the process easily. 
+
+In the next function I filter the dataset finding the records corresponding to the country 'Italy'.
+
+```{r}
+country_vaccine_dataframe<-function(x){ #function definition
+  
+  tb_vaccine_country<-filter(tb_vaccine, location==x) #using the function filter
+  return(tb_vaccine_country)
+}
+
+country_vaccine_dataframe('Italy') #selecting the needed values
+```
+#Point 2
+
+In the next function there are a series of operations. The input is a string corresponding to the country chosen. To filter the dataframe the previous function. The purpose of the function is to plot the number of vaccines given as a function of time for the different vaccine manufacturer. So inside the function a for loop is used to plot what required for each manufacturer. The list of the manufacturer is given by the function unique. Each plot is put in a list, which is the final output of the function
+
+```{r}
+
+plot_country_productors<-function(x){  #function defintion
+  
+  tb<-country_vaccine_dataframe(x) #selecting the records in the dataset that are from a specific country
+  plt_list<-list() #initialing the list that will contain the plots
+
+  for (i in unique(tb$vaccine)) {
+    
+    plt<-ggplot(tb[tb$vaccine==i,],aes(x=as.Date(date),y=total_vaccinations,group=1))+geom_line(col='blue')+geom_point(col='violet',size=0.5,shape=4)+scale_x_date(name="Date",date_breaks = "2 month",date_minor_breaks = "1 week")+ylab('Number of Vaccines')+ggtitle(i) #definition of the plot
+    plt_list<-list(plt_list,plt) 
+  }
+  return(plt_list)
+}
+
+```
+
+
+```{r}
+plot_country_productors('Italy')
+```
+
+##Point 3
+
+To plot the required values I use a function. In this function firstly I select the datas from a specific country. Than with a for loop, for each value of the 'date' in the dataset I sum the number of total vaccinations. Then I append this value to a list. In a second list I append the 'date' value. Using the lists I plot the values.
+
+
+```{r}
+plot_total_vaccinations_per_day<-function(x){ #function definition
+  
+  tb<-country_vaccine_dataframe(x) #selecting data from a specific country
+  dates<-c() #initializing the lists
+  vaccinations_per_day<-c()
+  
+
+  for (i in unique(tb$date)) {
+    
+    s<-sum(tb[tb$date==i,]$total_vaccinations) #summing the values 
+    dates<-append(dates,i) #appending the values needed
+    vaccinations_per_day<-append(vaccinations_per_day,s)
+    s<-0
+  }
+ 
+  
+      plt<-ggplot(,aes(x=as.Date(dates),y=vaccinations_per_day,group=1))+geom_line(col='violet')+geom_point(col='green',size=0.5,shape=4)+scale_x_date(name="Date",date_breaks = "2 month",date_minor_breaks = "1 week")+scale_y_continuous(name='total number of vaccines per day')+ggtitle(x) #definition of the plot
+    
+  
+  return(plt)
+}
+```
+
+```{r}
+plot_total_vaccinations_per_day('Italy')
+```
+
+##Point 4
+
+Now I repeat the process for Germany and USA.
+
+```{r}
+
+plot_country_productors('Germany')
+
+```
+
+```{r}
+plot_total_vaccinations_per_day('Germany')
+
+```
+
+
+```{r}
+
+plot_country_productors('United States')
+
+```
+
+```{r}
+
+plot_total_vaccinations_per_day('United States')
+```
+
+
+I download the dataset with read.csv and I convert it in a tibble.
+
+```{r}
+
+data <- read.csv("vaccinations.csv", header=T,sep = ",")
+data
+
+```
+
+
+```{r}
+
+tb_vaccine_2 <- tibble(data)
+tb_vaccine_2
+```
+##Point 1
+
+I select all europeans countries by filtering the data using the 'iso_code'. I select the records with the iso_code='OWID_EUR'. 
+
+```{r}
+tb_vaccine_eu<-tb_vaccine_2[tb_vaccine_2$iso_code=='OWID_EUR',] # selecting the values
+tb_vaccine_eu
+```
+Than I plot the required values.
+
+```{r}
+ggplot(tb_vaccine_eu,aes(x=as.Date(date),y=tb_vaccine_eu$daily_vaccinations_per_million,group=1))+geom_line(col='blue')+geom_point(col='orange',size=0.5,shape=4)+scale_x_date(name="Date",date_breaks = "2 month",date_minor_breaks = "1 week")+ylab('daily vaccinations per million')+ggtitle("Europe")
+
+```
+
+# Point 2
+
+In order to get a global vision, I plot all numeric type of data from the World.
+
+```{r}
+tb_vaccine_world<-tb_vaccine_2[tb_vaccine_2$location=='World',] #selecting the data from the World
+tb_vaccine_world
+
+n<-names(tb_vaccine_world) # printing the names of the columns
+n
+```
+The columns with numeric values go from the 4th to the last one.
+
+```{r}
+
+ggplot(tb_vaccine_world,aes(x=as.Date(date),y=tb_vaccine_world$total_vaccinations,group=1))+geom_line(col='blue')+geom_point(col='orange',size=0.5,shape=4)+scale_x_date(name="Date",date_breaks = "2 month",date_minor_breaks = "1 week")+ylab('total vaccinations')+ggtitle('World')
+
+ggplot(tb_vaccine_world,aes(x=as.Date(date),y=tb_vaccine_world$people_vaccinated,group=1))+geom_line(col='blue')+geom_point(col='orange',size=0.5,shape=4)+scale_x_date(name="Date",date_breaks = "2 month",date_minor_breaks = "1 week")+ylab('people vaccinated')+ggtitle('World')
+
+ggplot(tb_vaccine_world,aes(x=as.Date(date),y=tb_vaccine_world$people_fully_vaccinated,group=1))+geom_line(col='blue')+geom_point(col='orange',size=0.5,shape=4)+scale_x_date(name="Date",date_breaks = "2 month",date_minor_breaks = "1 week")+ylab('people fully vacccinated')+ggtitle('World')
+
+ggplot(tb_vaccine_world,aes(x=as.Date(date),y=tb_vaccine_world$total_boosters,group=1))+geom_line(col='blue')+geom_point(col='orange',size=0.5,shape=4)+scale_x_date(name="Date",date_breaks = "2 month",date_minor_breaks = "1 week")+ylab('total boosters')+ggtitle('World')
+
+ggplot(tb_vaccine_world,aes(x=as.Date(date),y=tb_vaccine_world$daily_vaccinations_raw,group=1))+geom_line(col='blue')+geom_point(col='orange',size=0.5,shape=4)+scale_x_date(name="Date",date_breaks = "2 month",date_minor_breaks = "1 week")+ylab('daily vaccinations raw')+ggtitle('World')
+
+ggplot(tb_vaccine_world,aes(x=as.Date(date),y=tb_vaccine_world$daily_vaccinations,group=1))+geom_line(col='blue')+geom_point(col='orange',size=0.5,shape=4)+scale_x_date(name="Date",date_breaks = "2 month",date_minor_breaks = "1 week")+ylab('daily vaccinations ')+ggtitle('World')
+
+ggplot(tb_vaccine_world,aes(x=as.Date(date),y=tb_vaccine_world$total_vaccinations_per_hundred,group=1))+geom_line(col='blue')+geom_point(col='orange',size=0.5,shape=4)+scale_x_date(name="Date",date_breaks = "2 month",date_minor_breaks = "1 week")+ylab('daily vaccinations per hundred')+ggtitle('World')
+
+
+ggplot(tb_vaccine_world,aes(x=as.Date(date),y=tb_vaccine_world$people_vaccinated_per_hundred,group=1))+geom_line(col='blue')+geom_point(col='orange',size=0.5,shape=4)+scale_x_date(name="Date",date_breaks = "2 month",date_minor_breaks = "1 week")+ylab('people vaccinated per hundred')+ggtitle('World')
+
+
+
+```
+
+
+```{r}
+
+
+ggplot(tb_vaccine_world,aes(x=as.Date(date),y=tb_vaccine_world$people_fully_vaccinated_per_hundred,group=1))+geom_line(col='blue')+geom_point(col='orange',size=0.5,shape=4)+scale_x_date(name="Date",date_breaks = "2 month",date_minor_breaks = "1 week")+ylab('people fully vaccinated per hundred')+ggtitle('World')
+
+ggplot(tb_vaccine_world,aes(x=as.Date(date),y=tb_vaccine_world$daily_vaccinations_per_million,group=1))+geom_line(col='blue')+geom_point(col='orange',size=0.5,shape=4)+scale_x_date(name="Date",date_breaks = "2 month",date_minor_breaks = "1 week")+ylab('daily vaccinations per million')+ggtitle('World')
+
+ggplot(tb_vaccine_world,aes(x=as.Date(date),y=tb_vaccine_world$daily_people_vaccinated,group=1))+geom_line(col='blue')+geom_point(col='orange',size=0.5,shape=4)+scale_x_date(name="Date",date_breaks = "2 month",date_minor_breaks = "1 week")+ylab('daily people vaccinated')+ggtitle('World')
+
+
+ggplot(tb_vaccine_world,aes(x=as.Date(date),y=tb_vaccine_world$daily_people_vaccinated_per_hundred,group=1))+geom_line(col='blue')+geom_point(col='orange',size=0.5,shape=4)+scale_x_date(name="Date",date_breaks = "2 month",date_minor_breaks = "1 week")+ylab('daily people vaccinated per hundred')+ggtitle('World')
+
+
+
+
+```
+
