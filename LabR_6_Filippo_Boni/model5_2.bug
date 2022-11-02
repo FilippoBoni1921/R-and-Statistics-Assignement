@@ -1,0 +1,14 @@
+model {
+
+for (i in 1:length(X)) {
+
+	X[i]~dpois(mu); 
+
+}
+
+mu~dgamma(0.5, 0.00001);
+
+
+y~dpois(mu)
+
+}

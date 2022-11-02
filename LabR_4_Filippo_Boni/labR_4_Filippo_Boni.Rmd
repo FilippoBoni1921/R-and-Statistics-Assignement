@@ -1,0 +1,1493 @@
+---
+title: "R Notebook"
+output: html_document
+    #ipynbdocument::ipynb_document
+---
+
+```{r, echo=FALSE}
+knitr::opts_chunk$set(error = TRUE)
+```
+
+```{r}
+install.packages("copula")
+```
+
+
+```{r}
+rm(list=ls())
+```
+
+
+```{r}
+library(ggplot2)
+library(tibble)
+library(dplyr)
+library(ggplot2)
+library(readr)
+library(lubridate)
+library(dplyr)
+library(copula)
+```
+
+
+
+#Exercise 1
+
+
+
+```{r}
+data <- read_csv("Global_Mobility_Report.csv")
+data
+```
+
+
+I select the data that refers to Italy.
+```{r}
+data_it<-data[data$country_region_code=="IT",]
+data_it
+```
+
+I filter the data with the country_region attribute different from Na.
+```{r}
+data_it<-data_it[is.na(data_it$country_region_code)==FALSE,]
+```
+
+I exctract the week, the month and the year of each record and create the proper columns
+```{r}
+data_it['week']<-week(ymd(data_it$date))
+
+```
+
+```{r}
+data_it['month']<-month(ymd(data_it$date))
+```
+
+
+```{r}
+data_it['year']<-year(ymd(data_it$date))
+data_it
+```
+
+I select the data that refers only to the Italy in total (not specifically to regions or cities)
+```{r}
+data_it<-data_it[is.na(data_it$metro_area)==TRUE,]
+data_it<-data_it[is.na(data_it$sub_region_2)==TRUE,]
+data_it<-data_it[is.na(data_it$sub_region_1)==TRUE,]
+```
+
+Using the group by function I calculate the average per week of the attributes of the dataframe
+```{r}
+
+week_df = data_it %>%
+    group_by(year,week) %>% 
+    summarise(avg_retail=mean(retail_and_recreation_percent_change_from_baseline),
+              avg_gp=mean(grocery_and_pharmacy_percent_change_from_baseline),
+              avg_parks=mean(parks_percent_change_from_baseline),
+              avg_tran_st=mean(transit_stations_percent_change_from_baseline),
+              avg_workplace=mean(workplaces_percent_change_from_baseline),
+              avg_res=mean(residential_percent_change_from_baseline),
+              .groups="keep")
+```
+
+Printing the obtained dataframe
+```{r}
+week_df
+```
+
+
+Here i plot the results. For each quantity I use three plots, one for each year
+```{r}
+for (i in 2020:2022) {
+
+    df_year<-week_df[week_df$year==i,]
+    x = df_year$week
+    y = df_year$avg_retail
+    
+    title<-paste("average retail and recreation percent change from baseline",as.character(i))
+    plt<-ggplot(df_year,aes(x=x,y=y,group=1))+
+      geom_line(colour="red")+
+      geom_point(stat="identity",colour="black",pch=21, size=1.5, fill='red')+
+      xlab("week")+
+      ylab("")+
+      scale_y_continuous(limits = c(-90, 10), breaks = seq(-90, 10, by=10))+
+      scale_x_continuous(limits = c(0, 52), breaks = seq(0, 52, by=5))+
+      theme(axis.text.x = element_text(face="bold.italic", size=10), axis.text.y =
+              element_text(face="bold.italic", size=10), title =
+              element_text(face="bold.italic", size=12))+
+      ggtitle(title)
+    print(plt)
+  
+}
+
+```
+
+```{r}
+
+for (i in 2020:2022) {
+
+    df_year<-week_df[week_df$year==i,]
+    x = df_year$week
+    y = df_year$avg_gp
+    
+    title<-paste("average grocery and pharmacy percent change from baseline",as.character(i))
+    plt<-ggplot(df_year,aes(x=x,y=y,group=1))+
+      geom_line(colour="blue")+
+      geom_point(stat="identity",colour="black",pch=21, size=1.5, fill='blue')+
+      xlab("week")+
+      ylab("")+
+      scale_y_continuous(limits = c(-60, 40), breaks = seq(-60, 40, by=10))+
+      scale_x_continuous(limits = c(0, 52), breaks = seq(0, 52, by=5))+
+      theme(axis.text.x = element_text(face="bold.italic", size=10), axis.text.y =
+              element_text(face="bold.italic", size=10), title =
+              element_text(face="bold.italic", size=12))+
+      ggtitle(title)
+    print(plt)
+  
+}
+
+```
+```{r}
+
+for (i in 2020:2022) {
+
+    df_year<-week_df[week_df$year==i,]
+    x = df_year$week
+    y = df_year$avg_parks
+    
+    title<-paste("average parks percent change from baseline",as.character(i))
+    plt<-ggplot(df_year,aes(x=x,y=y,group=1))+
+      geom_line(colour="green")+
+      geom_point(stat="identity",colour="black",pch=21, size=1.5, fill='green')+
+      xlab("week")+
+      ylab("")+
+      scale_y_continuous(limits = c(-100, 200), breaks = seq(-100, 200, by=10))+
+      scale_x_continuous(limits = c(0, 52), breaks = seq(0, 52, by=5))+
+      theme(axis.text.x = element_text(face="bold.italic", size=10), axis.text.y =
+              element_text(face="bold.italic", size=10), title =
+              element_text(face="bold.italic", size=12))+
+      ggtitle(title)
+    print(plt)
+  
+}
+
+```
+
+```{r}
+for (i in 2020:2022) {
+
+    df_year<-week_df[week_df$year==i,]
+    x = df_year$week
+    y = df_year$avg_tran_st
+    
+    title<-paste("average transit stations  percent change from baseline",as.character(i))
+    plt<-ggplot(df_year,aes(x=x,y=y,group=1))+
+      geom_line(colour="violet")+
+      geom_point(stat="identity",colour="black",pch=21, size=1.5, fill='violet')+
+      xlab("week")+
+      ylab("")+
+      scale_y_continuous(limits = c(-90, 10), breaks = seq(-90, 10, by=10))+
+      scale_x_continuous(limits = c(0, 52), breaks = seq(0, 52, by=5))+
+      theme(axis.text.x = element_text(face="bold.italic", size=10), axis.text.y =
+              element_text(face="bold.italic", size=10), title =
+              element_text(face="bold.italic", size=12))+
+      ggtitle(title)
+    print(plt)
+  
+}
+
+```
+
+```{r}
+for (i in 2020:2022) {
+
+    df_year<-week_df[week_df$year==i,]
+    x = df_year$week
+    y = df_year$avg_workplace
+    
+    title<-paste("average workplaces percent change from baseline",as.character(i))
+    plt<-ggplot(df_year,aes(x=x,y=y,group=1))+
+      geom_line(colour="orange")+
+      geom_point(stat="identity",colour="black",pch=21, size=1.5, fill='orange')+
+      xlab("week")+
+      ylab("")+
+      scale_y_continuous(limits = c(-80, 0), breaks = seq(-80, 0, by=10))+
+      scale_x_continuous(limits = c(0, 52), breaks = seq(0, 52, by=5))+
+      theme(axis.text.x = element_text(face="bold.italic", size=10), axis.text.y =
+              element_text(face="bold.italic", size=10), title =
+              element_text(face="bold.italic", size=12))+
+      ggtitle(title)
+    print(plt)
+  
+}
+```
+
+```{r}
+for (i in 2020:2022) {
+
+    df_year<-week_df[week_df$year==i,]
+    x = df_year$week
+    y = df_year$avg_res
+    
+    title<-paste("average residential percent change from baseline",as.character(i))
+    plt<-ggplot(df_year,aes(x=x,y=y,group=1))+
+      geom_line(colour="pink")+
+      geom_point(stat="identity",colour="black",pch=21, size=1.5, fill='pink')+
+      xlab("week")+
+      ylab("")+
+      scale_y_continuous(limits = c(-10, 40), breaks = seq(-10, 40, by=10))+
+      scale_x_continuous(limits = c(0, 52), breaks = seq(0, 52, by=5))+
+      theme(axis.text.x = element_text(face="bold.italic", size=10), axis.text.y =
+              element_text(face="bold.italic", size=10), title =
+              element_text(face="bold.italic", size=12))+
+      ggtitle(title)
+    print(plt)
+  
+}
+```
+ 
+I repeat the previous analysis, but grouping by the months.
+```{r}
+
+month_df = data_it %>%
+    group_by(year,month) %>% 
+    summarise(avg_retail=mean(retail_and_recreation_percent_change_from_baseline),
+              avg_gp=mean(grocery_and_pharmacy_percent_change_from_baseline),
+              avg_parks=mean(parks_percent_change_from_baseline),
+              avg_tran_st=mean(transit_stations_percent_change_from_baseline),
+              avg_workplace=mean(workplaces_percent_change_from_baseline),
+              avg_res=mean(residential_percent_change_from_baseline),
+              .groups="keep")
+```
+
+
+```{r}
+month_df
+```
+
+
+
+```{r}
+for (i in 2020:2022) {
+
+    df_year<-month_df[month_df$year==i,]
+    x = df_year$month
+    y = df_year$avg_retail
+    
+    title<-paste("average retail and recreation percent change from baseline",as.character(i))
+    plt<-ggplot(df_year,aes(x=x,y=y,group=1))+
+      geom_line(colour="red")+
+      geom_point(stat="identity",colour="black",pch=21, size=1.5, fill='red')+
+      xlab("month")+
+      ylab("")+
+      scale_y_continuous(limits = c(-90, 10), breaks = seq(-90, 10, by=10))+
+      scale_x_continuous(limits = c(0, 12), breaks = seq(0, 12, by=1))+
+      theme(axis.text.x = element_text(face="bold.italic", size=10), axis.text.y =
+              element_text(face="bold.italic", size=10), title =
+              element_text(face="bold.italic", size=12))+
+      ggtitle(title)
+    print(plt)
+  
+}
+
+```
+
+```{r}
+
+for (i in 2020:2022) {
+
+    df_year<-month_df[month_df$year==i,]
+    x = df_year$month
+    y = df_year$avg_gp
+    
+    title<-paste("average grocery and pharmacy percent change from baseline",as.character(i))
+    plt<-ggplot(df_year,aes(x=x,y=y,group=1))+
+      geom_line(colour="blue")+
+      geom_point(stat="identity",colour="black",pch=21, size=1.5, fill='blue')+
+      xlab("month")+
+      ylab("")+
+      scale_y_continuous(limits = c(-50, 40), breaks = seq(-50, 40, by=10))+
+      scale_x_continuous(limits = c(0, 12), breaks = seq(0, 12, by=1))+
+      theme(axis.text.x = element_text(face="bold.italic", size=10), axis.text.y =
+              element_text(face="bold.italic", size=10), title =
+              element_text(face="bold.italic", size=12))+
+      ggtitle(title)
+    print(plt)
+  
+}
+
+```
+
+
+```{r}
+
+for (i in 2020:2022) {
+
+    df_year<-month_df[month_df$year==i,]
+    x = df_year$month
+    y = df_year$avg_parks
+    
+    title<-paste("average parks percent change from baseline",as.character(i))
+    plt<-ggplot(df_year,aes(x=x,y=y,group=1))+
+      geom_line(colour="green")+
+      geom_point(stat="identity",colour="black",pch=21, size=1.5, fill='green')+
+      xlab("month")+
+      ylab("")+
+      scale_y_continuous(limits = c(-90, 170), breaks = seq(-90, 170, by=10))+
+      scale_x_continuous(limits = c(0, 12), breaks = seq(0, 12, by=1))+
+      theme(axis.text.x = element_text(face="bold.italic", size=10), axis.text.y =
+              element_text(face="bold.italic", size=10), title =
+              element_text(face="bold.italic", size=12))+
+      ggtitle(title)
+    print(plt)
+  
+}
+
+```
+
+```{r}
+for (i in 2020:2022) {
+
+    df_year<-month_df[month_df$year==i,]
+    x = df_year$month
+    y = df_year$avg_tran_st
+    
+    title<-paste("average transit stations  percent change from baseline",as.character(i))
+    plt<-ggplot(df_year,aes(x=x,y=y,group=1))+
+      geom_line(colour="violet")+
+      geom_point(stat="identity",colour="black",pch=21, size=1.5, fill='violet')+
+      xlab("month")+
+      ylab("")+
+      scale_y_continuous(limits = c(-90, 0), breaks = seq(-90, 0, by=10))+
+      scale_x_continuous(limits = c(0, 12), breaks = seq(0, 12, by=1))+
+      theme(axis.text.x = element_text(face="bold.italic", size=10), axis.text.y =
+              element_text(face="bold.italic", size=10), title =
+              element_text(face="bold.italic", size=12))+
+      ggtitle(title)
+    print(plt)
+  
+}
+
+```
+
+```{r}
+for (i in 2020:2022) {
+
+    df_year<-month_df[month_df$year==i,]
+    x = df_year$month
+    y = df_year$avg_workplace
+    
+    title<-paste("average workplaces percent change from baseline",as.character(i))
+    plt<-ggplot(df_year,aes(x=x,y=y,group=1))+
+      geom_line(colour="orange")+
+      geom_point(stat="identity",colour="black",pch=21, size=1.5, fill='orange')+
+      xlab("month")+
+      ylab("")+
+      scale_y_continuous(limits = c(-80, 0), breaks = seq(-80, 0, by=10))+
+      scale_x_continuous(limits = c(0, 12), breaks = seq(0, 12, by=1))+
+      theme(axis.text.x = element_text(face="bold.italic", size=10), axis.text.y =
+              element_text(face="bold.italic", size=10), title =
+              element_text(face="bold.italic", size=12))+
+      ggtitle(title)
+    print(plt)
+  
+}
+```
+
+```{r}
+for (i in 2020:2022) {
+
+    df_year<-month_df[month_df$year==i,]
+    x = df_year$month
+    y = df_year$avg_res
+    
+    title<-paste("average residential percent change from baseline",as.character(i))
+    plt<-ggplot(df_year,aes(x=x,y=y,group=1))+
+      geom_line(colour="pink")+
+      geom_point(stat="identity",colour="black",pch=21, size=1.5, fill='pink')+
+      xlab("month")+
+      ylab("")+
+      scale_y_continuous(limits = c(-10, 40), breaks = seq(-10, 40, by=10))+
+      scale_x_continuous(limits = c(0, 12), breaks = seq(0, 12, by=1))+
+      theme(axis.text.x = element_text(face="bold.italic", size=10), axis.text.y =
+              element_text(face="bold.italic", size=10), title =
+              element_text(face="bold.italic", size=12))+
+      ggtitle(title)
+    print(plt)
+  
+}
+```
+From the data it is possible that all quantities but residential percenta change are characterized by a drop during the first months and weeks of the pandemic, obviuously for the lockdown. It is possible to see a drop alsobetween the last weeks of the 2020 and the first weeks of the 2021, corresponding to the second wave of covid 19.
+After this two periods the quantities are characterized by a general positive slope, corresponding to the periodafter the pandemic waves. It is interesting to notice that workplaces and the transit stations have never reached the pre-pandemic levels while parks and retail/recreation places overcome the baseline. Probably because those are recreation places. Also groceries and pharmacies has overcome the baseline levels. Parks are characterized by a strong increases during warm months.
+Basically the values reletated to 'residential' have an opposite behaviour. Indeed they increase during the first two waves periods and they drop after that. It is interesting to notice that the change with respect to the baseline is almost always positive, even in the warm periods, meaning that after covid 19 people tend to spend more time at home.
+
+Here I download the data related to France and repeat the previous analysis.
+```{r}
+data_fr<-data[data$country_region_code=="FR",]
+data_fr
+```
+
+```{r}
+data_fr<-data_fr[is.na(data_fr$country_region_code)==FALSE,]
+```
+
+```{r}
+data_fr['week']<-week(ymd(data_fr$date))
+
+```
+
+```{r}
+data_fr['month']<-month(ymd(data_fr$date))
+```
+
+
+
+```{r}
+data_fr['year']<-year(ymd(data_fr$date))
+data_fr
+```
+
+```{r}
+data_fr<-data_fr[is.na(data_fr$metro_area)==TRUE,]
+data_fr<-data_fr[is.na(data_fr$sub_region_2)==TRUE,]
+data_fr<-data_fr[is.na(data_fr$sub_region_1)==TRUE,]
+```
+
+```{r}
+
+week_df = data_fr %>%
+    group_by(year,week) %>% 
+    summarise(avg_retail=mean(retail_and_recreation_percent_change_from_baseline),
+              avg_gp=mean(grocery_and_pharmacy_percent_change_from_baseline),
+              avg_parks=mean(parks_percent_change_from_baseline),
+              avg_tran_st=mean(transit_stations_percent_change_from_baseline),
+              avg_workplace=mean(workplaces_percent_change_from_baseline),
+              avg_res=mean(residential_percent_change_from_baseline),
+              .groups="keep")
+```
+
+
+```{r}
+week_df
+```
+
+
+
+```{r}
+for (i in 2020:2022) {
+
+    df_year<-week_df[week_df$year==i,]
+    x = df_year$week
+    y = df_year$avg_retail
+    
+    title<-paste("average retail and recreation percent change from baseline",as.character(i))
+    plt<-ggplot(df_year,aes(x=x,y=y,group=1))+
+      geom_line(colour="red")+
+      geom_point(stat="identity",colour="black",pch=21, size=1.5, fill='red')+
+      xlab("week")+
+      ylab("")+
+      scale_y_continuous(limits = c(-90, 10), breaks = seq(-90, 10, by=10))+
+      scale_x_continuous(limits = c(0, 52), breaks = seq(0, 52, by=5))+
+      theme(axis.text.x = element_text(face="bold.italic", size=10), axis.text.y =
+              element_text(face="bold.italic", size=10), title =
+              element_text(face="bold.italic", size=12))+
+      ggtitle(title)
+    print(plt)
+  
+}
+
+```
+
+```{r}
+
+for (i in 2020:2022) {
+
+    df_year<-week_df[week_df$year==i,]
+    x = df_year$week
+    y = df_year$avg_gp
+    
+    title<-paste("average grocery and pharmacy percent change from baseline",as.character(i))
+    plt<-ggplot(df_year,aes(x=x,y=y,group=1))+
+      geom_line(colour="blue")+
+      geom_point(stat="identity",colour="black",pch=21, size=1.5, fill='blue')+
+      xlab("week")+
+      ylab("")+
+      scale_y_continuous(limits = c(-60, 40), breaks = seq(-60, 40, by=10))+
+      scale_x_continuous(limits = c(0, 52), breaks = seq(0, 52, by=5))+
+      theme(axis.text.x = element_text(face="bold.italic", size=10), axis.text.y =
+              element_text(face="bold.italic", size=10), title =
+              element_text(face="bold.italic", size=12))+
+      ggtitle(title)
+    print(plt)
+  
+}
+
+```
+```{r}
+
+for (i in 2020:2022) {
+
+    df_year<-week_df[week_df$year==i,]
+    x = df_year$week
+    y = df_year$avg_parks
+    
+    title<-paste("average parks percent change from baseline",as.character(i))
+    plt<-ggplot(df_year,aes(x=x,y=y,group=1))+
+      geom_line(colour="green")+
+      geom_point(stat="identity",colour="black",pch=21, size=1.5, fill='green')+
+      xlab("week")+
+      ylab("")+
+      scale_y_continuous(limits = c(-100, 200), breaks = seq(-100, 200, by=10))+
+      scale_x_continuous(limits = c(0, 52), breaks = seq(0, 52, by=5))+
+      theme(axis.text.x = element_text(face="bold.italic", size=10), axis.text.y =
+              element_text(face="bold.italic", size=10), title =
+              element_text(face="bold.italic", size=12))+
+      ggtitle(title)
+    print(plt)
+  
+}
+
+```
+
+```{r}
+for (i in 2020:2022) {
+
+    df_year<-week_df[week_df$year==i,]
+    x = df_year$week
+    y = df_year$avg_tran_st
+    
+    title<-paste("average transit stations  percent change from baseline",as.character(i))
+    plt<-ggplot(df_year,aes(x=x,y=y,group=1))+
+      geom_line(colour="violet")+
+      geom_point(stat="identity",colour="black",pch=21, size=1.5, fill='violet')+
+      xlab("week")+
+      ylab("")+
+      scale_y_continuous(limits = c(-90, 10), breaks = seq(-90, 10, by=10))+
+      scale_x_continuous(limits = c(0, 52), breaks = seq(0, 52, by=5))+
+      theme(axis.text.x = element_text(face="bold.italic", size=10), axis.text.y =
+              element_text(face="bold.italic", size=10), title =
+              element_text(face="bold.italic", size=12))+
+      ggtitle(title)
+    print(plt)
+  
+}
+
+```
+
+```{r}
+for (i in 2020:2022) {
+
+    df_year<-week_df[week_df$year==i,]
+    x = df_year$week
+    y = df_year$avg_workplace
+    
+    title<-paste("average workplaces percent change from baseline",as.character(i))
+    plt<-ggplot(df_year,aes(x=x,y=y,group=1))+
+      geom_line(colour="orange")+
+      geom_point(stat="identity",colour="black",pch=21, size=1.5, fill='orange')+
+      xlab("week")+
+      ylab("")+
+      scale_y_continuous(limits = c(-80, 0), breaks = seq(-80, 0, by=10))+
+      scale_x_continuous(limits = c(0, 52), breaks = seq(0, 52, by=5))+
+      theme(axis.text.x = element_text(face="bold.italic", size=10), axis.text.y =
+              element_text(face="bold.italic", size=10), title =
+              element_text(face="bold.italic", size=12))+
+      ggtitle(title)
+    print(plt)
+  
+}
+```
+
+```{r}
+for (i in 2020:2022) {
+
+    df_year<-week_df[week_df$year==i,]
+    x = df_year$week
+    y = df_year$avg_res
+    
+    title<-paste("average residential percent change from baseline",as.character(i))
+    plt<-ggplot(df_year,aes(x=x,y=y,group=1))+
+      geom_line(colour="pink")+
+      geom_point(stat="identity",colour="black",pch=21, size=1.5, fill='pink')+
+      xlab("week")+
+      ylab("")+
+      scale_y_continuous(limits = c(-10, 40), breaks = seq(-10, 40, by=10))+
+      scale_x_continuous(limits = c(0, 52), breaks = seq(0, 52, by=5))+
+      theme(axis.text.x = element_text(face="bold.italic", size=10), axis.text.y =
+              element_text(face="bold.italic", size=10), title =
+              element_text(face="bold.italic", size=12))+
+      ggtitle(title)
+    print(plt)
+  
+}
+```
+
+```{r}
+
+month_df = data_it %>%
+    group_by(year,month) %>% 
+    summarise(avg_retail=mean(retail_and_recreation_percent_change_from_baseline),
+              avg_gp=mean(grocery_and_pharmacy_percent_change_from_baseline),
+              avg_parks=mean(parks_percent_change_from_baseline),
+              avg_tran_st=mean(transit_stations_percent_change_from_baseline),
+              avg_workplace=mean(workplaces_percent_change_from_baseline),
+              avg_res=mean(residential_percent_change_from_baseline),
+              .groups="keep")
+```
+
+
+```{r}
+month_df
+```
+
+
+
+```{r}
+for (i in 2020:2022) {
+
+    df_year<-month_df[month_df$year==i,]
+    x = df_year$month
+    y = df_year$avg_retail
+    
+    title<-paste("average retail and recreation percent change from baseline",as.character(i))
+    plt<-ggplot(df_year,aes(x=x,y=y,group=1))+
+      geom_line(colour="red")+
+      geom_point(stat="identity",colour="black",pch=21, size=1.5, fill='red')+
+      xlab("month")+
+      ylab("")+
+      scale_y_continuous(limits = c(-90, 10), breaks = seq(-90, 10, by=10))+
+      scale_x_continuous(limits = c(0, 12), breaks = seq(0, 12, by=1))+
+      theme(axis.text.x = element_text(face="bold.italic", size=10), axis.text.y =
+              element_text(face="bold.italic", size=10), title =
+              element_text(face="bold.italic", size=12))+
+      ggtitle(title)
+    print(plt)
+  
+}
+
+```
+
+```{r}
+
+for (i in 2020:2022) {
+
+    df_year<-month_df[month_df$year==i,]
+    x = df_year$month
+    y = df_year$avg_gp
+    
+    title<-paste("average grocery and pharmacy percent change from baseline",as.character(i))
+    plt<-ggplot(df_year,aes(x=x,y=y,group=1))+
+      geom_line(colour="blue")+
+      geom_point(stat="identity",colour="black",pch=21, size=1.5, fill='blue')+
+      xlab("month")+
+      ylab("")+
+      scale_y_continuous(limits = c(-50, 40), breaks = seq(-50, 40, by=10))+
+      scale_x_continuous(limits = c(0, 12), breaks = seq(0, 12, by=1))+
+      theme(axis.text.x = element_text(face="bold.italic", size=10), axis.text.y =
+              element_text(face="bold.italic", size=10), title =
+              element_text(face="bold.italic", size=12))+
+      ggtitle(title)
+    print(plt)
+  
+}
+
+```
+
+
+```{r}
+
+for (i in 2020:2022) {
+
+    df_year<-month_df[month_df$year==i,]
+    x = df_year$month
+    y = df_year$avg_parks
+    
+    title<-paste("average parks percent change from baseline",as.character(i))
+    plt<-ggplot(df_year,aes(x=x,y=y,group=1))+
+      geom_line(colour="green")+
+      geom_point(stat="identity",colour="black",pch=21, size=1.5, fill='green')+
+      xlab("month")+
+      ylab("")+
+      scale_y_continuous(limits = c(-90, 170), breaks = seq(-90, 170, by=10))+
+      scale_x_continuous(limits = c(0, 12), breaks = seq(0, 12, by=1))+
+      theme(axis.text.x = element_text(face="bold.italic", size=10), axis.text.y =
+              element_text(face="bold.italic", size=10), title =
+              element_text(face="bold.italic", size=12))+
+      ggtitle(title)
+    print(plt)
+  
+}
+
+```
+
+```{r}
+for (i in 2020:2022) {
+
+    df_year<-month_df[month_df$year==i,]
+    x = df_year$month
+    y = df_year$avg_tran_st
+    
+    title<-paste("average transit stations  percent change from baseline",as.character(i))
+    plt<-ggplot(df_year,aes(x=x,y=y,group=1))+
+      geom_line(colour="violet")+
+      geom_point(stat="identity",colour="black",pch=21, size=1.5, fill='violet')+
+      xlab("month")+
+      ylab("")+
+      scale_y_continuous(limits = c(-90, 0), breaks = seq(-90, 0, by=10))+
+      scale_x_continuous(limits = c(0, 12), breaks = seq(0, 12, by=1))+
+      theme(axis.text.x = element_text(face="bold.italic", size=10), axis.text.y =
+              element_text(face="bold.italic", size=10), title =
+              element_text(face="bold.italic", size=12))+
+      ggtitle(title)
+    print(plt)
+  
+}
+
+```
+
+```{r}
+for (i in 2020:2022) {
+
+    df_year<-month_df[month_df$year==i,]
+    x = df_year$month
+    y = df_year$avg_workplace
+    
+    title<-paste("average workplaces percent change from baseline",as.character(i))
+    plt<-ggplot(df_year,aes(x=x,y=y,group=1))+
+      geom_line(colour="orange")+
+      geom_point(stat="identity",colour="black",pch=21, size=1.5, fill='orange')+
+      xlab("month")+
+      ylab("")+
+      scale_y_continuous(limits = c(-80, 0), breaks = seq(-80, 0, by=10))+
+      scale_x_continuous(limits = c(0, 12), breaks = seq(0, 12, by=1))+
+      theme(axis.text.x = element_text(face="bold.italic", size=10), axis.text.y =
+              element_text(face="bold.italic", size=10), title =
+              element_text(face="bold.italic", size=12))+
+      ggtitle(title)
+    print(plt)
+  
+}
+```
+
+
+```{r}
+for (i in 2020:2022) {
+
+    df_year<-month_df[month_df$year==i,]
+    x = df_year$month
+    y = df_year$avg_res
+    
+    title<-paste("average residential percent change from baseline",as.character(i))
+    plt<-ggplot(df_year,aes(x=x,y=y,group=1))+
+      geom_line(colour="pink")+
+      geom_point(stat="identity",colour="black",pch=21, size=1.5, fill='pink')+
+      xlab("month")+
+      ylab("")+
+      scale_y_continuous(limits = c(-10, 40), breaks = seq(-10, 40, by=10))+
+      scale_x_continuous(limits = c(0, 12), breaks = seq(0, 12, by=1))+
+      theme(axis.text.x = element_text(face="bold.italic", size=10), axis.text.y =
+              element_text(face="bold.italic", size=10), title =
+              element_text(face="bold.italic", size=12))+
+      ggtitle(title)
+    print(plt)
+  
+}
+```
+
+Basically the trends followed by the data related to France are very similar to the ones related to Italy. Probably meaning that the habits of the two populations and the anti covid measures of the two countries are similar.
+
+
+Here I download the data related to Italy in order to analyze the data of the Regions
+```{r}
+data_it<-data[data$country_region_code=="IT",]
+data_it
+```
+
+```{r}
+data_it<-data_it[is.na(data_it$country_region_code)==FALSE,]
+```
+
+```{r}
+data_it['week']<-week(ymd(data_it$date))
+
+```
+
+```{r}
+data_it['month']<-month(ymd(data_it$date))
+```
+
+
+
+```{r}
+data_it['year']<-year(ymd(data_it$date))
+data_it
+```
+
+Here I select the data related only to regions.
+```{r}
+
+data_it<-data_it[is.na(data_it$sub_region_1)==FALSE,]
+data_it<-data_it[is.na(data_it$sub_region_2)==TRUE,]
+data_it<-data_it[is.na(data_it$metro_area)==TRUE,]
+```
+
+```{r}
+data_it
+```
+
+
+Here I group by the quantities by the regions calculating their averages
+```{r}
+
+region_df = data_it %>%
+    group_by(sub_region_1) %>% 
+    summarise(avg_retail=mean(retail_and_recreation_percent_change_from_baseline),
+              avg_gp=mean(grocery_and_pharmacy_percent_change_from_baseline),
+              avg_parks=mean(parks_percent_change_from_baseline),
+              avg_tran_st=mean(transit_stations_percent_change_from_baseline),
+              avg_workplace=mean(workplaces_percent_change_from_baseline),
+              avg_res=mean(residential_percent_change_from_baseline),
+              .groups="keep")
+```
+
+
+
+```{r}
+region_df
+```
+
+Here I plot the results. The empty regions corresponds to NA  values.
+```{r}
+ggplot(region_df,aes(x=avg_retail, y=sub_region_1))+
+  geom_bar(stat='identity',col='navy',fill='red') +
+  geom_text(aes(label=round(avg_retail,2), size=0.5), hjust=0, size=3, color='black')+
+  ylab("Region")+
+  xlab('')+
+  theme(axis.text.x = element_text(face="bold.italic", size=10), axis.text.y =
+              element_text(face="bold.italic", size=10), title =
+              element_text(face="bold.italic", size=11))+
+  ggtitle("average retail and recreation percent change from baseline")
+```
+Here it is possible to see that almost all the regions have a decrease of the quantity "retail and recreation" with a maximum in Lombardy, the region which suffered the most from covid 19.
+
+```{r}
+ggplot(region_df,aes(x=avg_gp, y=sub_region_1))+
+  geom_bar(stat='identity',col='navy',fill='blue') +
+  geom_text(aes(label=round(avg_gp,2), size=0.5), hjust=0, size=3, color='black')+
+  ylab("Region")+
+  xlab('')+
+  theme(axis.text.x = element_text(face="bold.italic", size=10), axis.text.y =
+              element_text(face="bold.italic", size=10), title =
+              element_text(face="bold.italic", size=11))+
+  ggtitle("average grocery and pharmacy percent change from baseline")
+```
+From "grocery and pharmacy" there is not a particular behaviour
+
+```{r}
+ggplot(region_df,aes(x=avg_parks, y=sub_region_1))+
+  geom_bar(stat='identity',col='navy',fill='green') +
+  geom_text(aes(label=round(avg_parks,2), size=0.5), hjust=0, size=3, color='black')+
+  ylab("Region")+
+  xlab('')+
+  theme(axis.text.x = element_text(face="bold.italic", size=10), axis.text.y =
+              element_text(face="bold.italic", size=10), title =
+              element_text(face="bold.italic", size=11))+
+  ggtitle("average parks percent change from baseline")
+```
+Here it is possible to see how there is a general increase of the visitors in the parks.
+
+
+```{r}
+
+ggplot(region_df,aes(x=avg_tran_st, y=sub_region_1))+
+  geom_bar(stat='identity',col='navy',fill='violet') +
+  geom_text(aes(label=round(avg_tran_st,2), size=0.5), hjust=0, size=3, color='black')+
+  ylab("Region")+
+  xlab('')+
+  theme(axis.text.x = element_text(face="bold.italic", size=10), axis.text.y =
+              element_text(face="bold.italic", size=10), title =
+              element_text(face="bold.italic", size=11))+
+  ggtitle("average transit stations percent change from baseline")
+
+
+```
+
+```{r}
+ggplot(region_df,aes(x=avg_workplace, y=sub_region_1))+
+  geom_bar(stat='identity',col='navy',fill='orange') +
+  geom_text(aes(label=round(avg_workplace,2), size=0.5), hjust=0, size=3, color='black')+
+  ylab("Region")+
+  xlab('')+
+  theme(axis.text.x = element_text(face="bold.italic", size=10), axis.text.y =
+              element_text(face="bold.italic", size=10), title =
+              element_text(face="bold.italic", size=11))+
+  ggtitle("average workplace percent change from baseline")
+```
+
+The behaviour followed by "workplace" and "transit station" data is similar to the one of "retail and recreation" data.
+
+
+```{r}
+
+ggplot(region_df,aes(x=avg_res, y=sub_region_1))+
+  geom_bar(stat='identity',col='navy',fill='pink') +
+  geom_text(aes(label=round(avg_res,2), size=0.5), hjust=0, size=3, color='black')+
+  ylab("Region")+
+  xlab('')+
+  theme(axis.text.x = element_text(face="bold.italic", size=10), axis.text.y =
+              element_text(face="bold.italic", size=10), title =
+              element_text(face="bold.italic", size=11))+
+  ggtitle("average residential percent change from baseline")
+
+```
+
+Obviously the time spent by people in their house increases for all the regions.
+
+
+In order to have a global view, I repeat the analysis done for the Italy regions using the data from the countries of the world
+```{r}
+
+data_world<-data
+
+```
+
+```{r}
+data_world<-data_world[is.na(data_world$country_region_code)==FALSE,]
+```
+
+```{r}
+data_world<-data_world[is.na(data_world$sub_region_1)==TRUE,]
+data_world<-data_world[is.na(data_world$sub_region_2)==TRUE,]
+data_world<-data_world[is.na(data_world$metro_area)==TRUE,]
+```
+
+```{r}
+data_world
+```
+
+```{r}
+states_df = data_world %>%
+    group_by(country_region) %>% 
+    summarise(avg_retail=mean(retail_and_recreation_percent_change_from_baseline),
+              avg_gp=mean(grocery_and_pharmacy_percent_change_from_baseline),
+              avg_parks=mean(parks_percent_change_from_baseline),
+              avg_tran_st=mean(transit_stations_percent_change_from_baseline),
+              avg_workplace=mean(workplaces_percent_change_from_baseline),
+              avg_res=mean(residential_percent_change_from_baseline),
+              .groups="keep")
+```
+
+
+```{r fig.width=4,fig.height=12}
+ggplot(states_df,aes(x=avg_retail, y=country_region))+
+  geom_bar(stat='identity',col='navy',fill='red') +
+  geom_text(aes(label=round(avg_retail,2), size=0.5), hjust=0, size=3, color='black')+
+  ylab("country")+
+  xlab('')+
+  theme(axis.text.x = element_text(face="bold.italic", size=10), axis.text.y =
+              element_text(face="bold.italic", size=10), title =
+              element_text(face="bold.italic", size=11))+
+  ggtitle("average retail and recreation percent change from baseline")
+```
+
+The decline of the time spent in resturant or recreation trend is a trend respected by the majority of the countries. There is only one outlier: the Lybia.
+
+
+```{r fig.width=4,fig.height=12}
+ggplot(states_df,aes(x=avg_gp, y=country_region))+
+  geom_bar(stat='identity',col='navy',fill='blue') +
+  geom_text(aes(label=round(avg_gp,2), size=0.5), hjust=0, size=3, color='black')+
+  ylab("Country")+
+  xlab('')+
+  theme(axis.text.x = element_text(face="bold.italic", size=10), axis.text.y =
+              element_text(face="bold.italic", size=10), title =
+              element_text(face="bold.italic", size=11))+
+  ggtitle("average grocery and pharmacy percent change from baseline")
+```
+
+```{r fig.width=4,fig.height=12}
+ggplot(states_df,aes(x=avg_parks, y=country_region))+
+  geom_bar(stat='identity',col='navy',fill='green') +
+  geom_text(aes(label=round(avg_parks,2), size=0.5), hjust=0, size=3, color='black')+
+  ylab("Country")+
+  xlab('')+
+  theme(axis.text.x = element_text(face="bold.italic", size=10), axis.text.y =
+              element_text(face="bold.italic", size=10), title =
+              element_text(face="bold.italic", size=11))+
+  ggtitle("average parks percent change from baseline")
+```
+
+```{r fig.width=4,fig.height=12}
+
+ggplot(states_df,aes(x=avg_tran_st, y=country_region))+
+  geom_bar(stat='identity',col='navy',fill='violet') +
+  geom_text(aes(label=round(avg_tran_st,2), size=0.5), hjust=0, size=3, color='black')+
+  ylab("Country")+
+  xlab('')+
+  theme(axis.text.x = element_text(face="bold.italic", size=10), axis.text.y =
+              element_text(face="bold.italic", size=10), title =
+              element_text(face="bold.italic", size=11))+
+  ggtitle("average transit stations percent change from baseline")
+
+
+```
+
+```{r fig.width=4,fig.height=12}
+ggplot(states_df,aes(x=avg_workplace, y=country_region))+
+  geom_bar(stat='identity',col='navy',fill='orange') +
+  geom_text(aes(label=round(avg_workplace,2), size=0.5), hjust=0, size=3, color='black')+
+  ylab("Country")+
+  xlab('')+
+  theme(axis.text.x = element_text(face="bold.italic", size=10), axis.text.y =
+              element_text(face="bold.italic", size=10), title =
+              element_text(face="bold.italic", size=11))+
+  ggtitle("average workplace percent change from baseline")
+```
+
+Globally the time spent at worplaces is below the level of the baseline.
+
+```{r fig.width=4,fig.height=12}
+
+ggplot(states_df,aes(x=avg_res, y=country_region))+
+  geom_bar(stat='identity',col='navy',fill='pink') +
+  geom_text(aes(label=round(avg_res,2), size=0.5), hjust=0, size=3, color='black')+
+  ylab("Country")+
+  xlab('')+
+  theme(axis.text.x = element_text(face="bold.italic", size=10), axis.text.y =
+              element_text(face="bold.italic", size=10), title =
+              element_text(face="bold.italic", size=11))+
+  ggtitle("average workplace percent change from baseline")
+
+```
+
+From the plot it is possible to see how the growth of the time spent at home is almost a global behaviour
+
+
+
+
+
+#Exercise 2
+
+```{r}
+x<-readline(prompt = "insert an integer number with at least 10 digits:")
+x<-as.numeric(x)
+n<-readline(prompt = "how many numbers do you want to generate?")
+n<-as.numeric(n)
+generated_numbers<-c()
+
+
+for (i in 1:n) {
+  a<-unlist(strsplit(as.character(x),""))
+  
+  x_squared<-x^2
+
+  number <- unlist(strsplit(as.character(x_squared),""))
+  
+        
+  mid_el<-round(length(number)/2)
+  
+  shift_1<-round(length(a)/2)
+  shift_2<-shift_1-1
+  
+    
+  number_after_trimming<-number[(mid_el-shift_1):(mid_el+shift_2)]
+  
+  x<-as.numeric(paste(number_after_trimming, collapse=""))
+  generated_numbers<-append(generated_numbers,x)
+
+}
+
+generated_numbers
+
+```
+
+
+
+#Exercise 3
+
+As likelihood I use a binomial distribution with n = 150 and p = 29/150, because there are two possible states: a person read or didn't read the journal.
+```{r}
+
+x<-seq(0, 1, length.out = 151)
+prior<-dunif(x,0,1)
+
+r<-seq(0, 150, length.out = 151)
+n<-150
+p<-29/150
+like<-dbinom(r,n,p)
+```
+
+now I calculate the unnormalized posterior with r = 29.
+```{r}
+
+r<-29
+n<-150
+n_sample <- 150
+p<-seq(from=1/n_sample, by=1/n_sample, length.out = n_sample)
+
+unnorm_posterior<-dbinom(x=r, size=n, prob=p)
+
+```
+
+And calculate the normalization
+```{r}
+Z<-sum(unnorm_posterior/n_sample)
+Z
+```
+
+The normalized posterior is:
+```{r}
+posterior<-unnorm_posterior/Z
+```
+
+Here I plot the posterior
+```{r}
+
+plot<-ggplot(data.frame(x=p,y=posterior),aes(x,y))+geom_line(color="red")+
+      geom_line(colour="red",size=1)+
+      xlab("p")+
+      ylab("")+
+      ggtitle("Posterior")+
+      scale_y_continuous(limits = c(0, 13), breaks = seq(0, 13, by=1))+
+      scale_x_continuous(limits = c(0, 1), breaks = seq(0, 1, by=0.1))+
+      theme(axis.text.x = element_text(face="bold.italic", size=10), axis.text.y =
+             element_text(face="bold.italic", size=10), title =
+              element_text(face="bold.italic", size=12))
+  
+
+
+plot
+```
+
+I plot the not normalized posterior
+```{r}
+
+plot<-ggplot(data.frame(x=p,y=unnorm_posterior),aes(x,y))+
+      geom_line(colour="orange",size=1)+
+      xlab("p")+
+      ylab("")+
+      ggtitle("Not Notmalized Posterior")+
+      scale_y_continuous(limits = c(0, 0.09), breaks = seq(0, 0.09, by=0.01))+
+      scale_x_continuous(limits = c(0, 1), breaks = seq(0, 1, by=0.1))+
+      theme(axis.text.x = element_text(face="bold.italic", size=10), axis.text.y =
+             element_text(face="bold.italic", size=10), title =
+              element_text(face="bold.italic", size=12))
+  
+
+plot
+
+```
+
+Here I plot the likelihood
+```{r}
+r<-0:150
+plot<-ggplot(data.frame(x=r,y=like),aes(x,y))+geom_line(color="red")+
+      geom_line(colour="blue",size=1)+
+      xlab("r")+
+      ylab("")+
+      ggtitle("Likelihood")+
+      scale_y_continuous(limits = c(0, 0.09), breaks = seq(0, 0.09, by=0.01))+
+      scale_x_continuous(limits = c(0, 150), breaks = seq(0, 150, by=10))+
+      theme(axis.text.x = element_text(face="bold.italic", size=10), axis.text.y =
+             element_text(face="bold.italic", size=10), title =
+              element_text(face="bold.italic", size=12))
+  
+
+plot
+```
+
+
+In order to check the results I calculate the not normalized posterior multiplying the likelihood with posterior
+```{r}
+multi_posterior<-like*prior
+```
+
+```{r}
+p<-seq(0, 1, length.out = 151)
+plot<-ggplot(data.frame(x=p,y=multi_posterior),aes(x,y))+
+      geom_line(colour="orange",size=1)+
+      xlab("p")+
+      ylab("")+
+      ggtitle("Not Notmalized Posterior")+
+      scale_y_continuous(limits = c(0, 0.09), breaks = seq(0, 0.09, by=0.01))+
+      scale_x_continuous(limits = c(0, 1), breaks = seq(0, 1, by=0.1))+
+      theme(axis.text.x = element_text(face="bold.italic", size=10), axis.text.y =
+             element_text(face="bold.italic", size=10), title =
+              element_text(face="bold.italic", size=12))
+
+plot
+```
+
+The result is the same so the process is correct.
+
+#Exercise 4
+
+
+At first I define the posterior assuming n = 30 and r = 15. Wen the Beta distribution is used I set a = 3 and b = 9. When the functions are defined I calculate the Z in both case and than define again the posteriors normalizing them.
+```{r}
+
+#prior_unif<-dunif(x,0,1)
+#prior_beta<-dbeta(x,1,1)
+n<-30
+r<-15
+n_sample<-30
+a<-3
+b<-9
+p<-seq(from=1/n_sample, by=1/n_sample, length.out = n_sample)
+
+unnorm_posterior_unif<-function(x,r,n){
+  
+  out<-x^(r)*(1-x)^(n-r)
+  
+}
+
+Z_unif<-sum(unnorm_posterior_unif(p,r=r,n=n)/n_sample)
+
+posterior_unif<-function(x,r,n){
+  
+  out<-x^(r)*(1-x)^(n-r)/Z_unif
+  
+}
+
+unnorm_posterior_beta<-function(x,r,n,a,b){
+  
+  out<-x^(r+a-1)*(1-x)^(n-r+b-1)
+  
+}
+
+Z_beta<-sum(unnorm_posterior_beta(p,r=r,n=n,a=a,b=b))/n_sample
+
+posterior_beta<-function(x,r,n,a,b){
+  
+  out<-x^(r+a-1)*(1-x)^(n-r+b-1)/Z_beta
+  
+}
+
+```
+
+
+Now i define the likelihood, that is a binomial distribution with p = 15/30 and n = 30
+```{r}
+x<-1:30
+like<-dbinom(x,size=30,p=15/30)
+```
+
+Here I plot the likelihood
+
+```{r}
+plot<-ggplot(data.frame(x=x,y=like),aes(x,y))+
+      geom_line(colour="green",size=1)+
+      xlab("p")+
+      ylab("")+
+      ggtitle("Likelihood( n=30,r=15)")+
+      scale_y_continuous(limits = c(0,0.2), breaks = seq(0, 0.2, by=0.01))+
+      scale_x_continuous(limits = c(0, 30), breaks = seq(0, 30, by=5))+
+      theme(axis.text.x = element_text(face="bold.italic", size=10), axis.text.y =
+             element_text(face="bold.italic", size=10), title =
+              element_text(face="bold.italic", size=12))
+  
+
+plot
+
+```
+
+
+Here I plot the posteriors
+
+```{r}
+plot<-ggplot(data.frame(x=p,y=posterior_unif(p,r=r,n=n)),aes(x,y))+
+      geom_line(colour="red",size=1)+
+      xlab("p")+
+      ylab("")+
+      ggtitle("Posterior(uniform prior, n=30,r=15)")+
+      scale_y_continuous(limits = c(0,6), breaks = seq(0, 6, by=1))+
+      scale_x_continuous(limits = c(0, 1), breaks = seq(0, 1, by=0.1))+
+      theme(axis.text.x = element_text(face="bold.italic", size=10), axis.text.y =
+             element_text(face="bold.italic", size=10), title =
+              element_text(face="bold.italic", size=12))
+  
+
+plot
+
+```
+
+```{r}
+plot<-ggplot(data.frame(x=p,y=posterior_beta(p,r=r,n=n,a=a,b=b)),aes(x,y))+
+      geom_line(colour="blue",size=1)+
+      xlab("p")+
+      ylab("")+
+      ggtitle("Posterior(uniform prior, n=30,r=15)")+
+      scale_y_continuous(limits = c(0,6), breaks = seq(0, 6, by=1))+
+      scale_x_continuous(limits = c(0, 1), breaks = seq(0, 1, by=0.1))+
+      theme(axis.text.x = element_text(face="bold.italic", size=10), axis.text.y =
+             element_text(face="bold.italic", size=10), title =
+              element_text(face="bold.italic", size=12))
+  
+
+plot
+```
+
+
+Here I find the most probable values of p. 
+First for Beta prior:
+```{r}
+MAX_beta<-max(posterior_beta(p,r=r,n=n,a=a,b=b))
+index_max_beta<-which(posterior_beta(p,r=r,n=n,a=a,b=b)==MAX_beta)
+p_beta_max<-p[index_max_beta]
+cat("the most probable value of p(when the prior is a beta distribution B(a=3,b=9)) is", p_beta_max)
+```
+
+Second for a uniform prior:
+```{r}
+r = 15
+n = 30
+MAX_unif<-max(posterior_unif(p,r=r,n=n))
+index_max_unif<-which(posterior_unif(p,r=r,n=n)==MAX_unif)
+p_unif_max<-p[index_max_unif]
+cat("the most probable value of p(when the prior is a uniform distribution) is", p_unif_max)
+```
+
+
+
+Here I find the limits of the interval for 95% credibility interval.
+First for uniform prior:
+```{r}
+q = 0.025
+lim_inf<-qbeta(q,r+1,n-r+1)
+lim_sup<-qbeta(1-q,r+1,n-r+1)
+
+cat("the inteval for 95% credibility interval is [", lim_inf,",",lim_sup,"]")
+cat("\n")
+cat("the probability corresponding to the two extremes is ",integrate(posterior_unif,lim_inf,lim_sup,r=r,n=n)$value)
+```
+
+
+
+```{r}
+lim_inf<-qbeta(q,r+a+1,n-r+b+1)
+lim_sup<-qbeta(1-q,r+a+1,n-r+b+1)
+
+cat("the inteval for 95% credibility interval is [", lim_inf,",",lim_sup,"]")
+cat("\n")
+cat("the probability corresponding to the two extremes is ",integrate(posterior_beta, lim_inf,lim_sup,r=r,n=n,a=a,b=b)$value)
+```
+
+
+Here I see how the pevious quantities vary analyzing the data sequentially.
+
+```{r}
+head<-c(1,1,1,1,1,0,1,1,0,0,1,1,0,0,0,1,0,1,0,1,0,0,1,0,1,0,1,0,0,0)
+
+p_b_max_vec<-c()
+p_u_max_vec<-c()
+lim_inf_b_vec<-c()
+lim_sup_b_vec<-c()
+lim_inf_u_vec<-c()
+lim_sup_u_vec<-c()
+
+p<-seq(0, 1, length.out = 201)
+
+for (i in 1:length(head)) {
+  print(i)
+  samples<-head[1:i]
+  
+  r<-sum(samples)
+  n<-length(samples)
+  q=0.025
+  
+  MAX_beta<-max(posterior_beta(p,r=r,n=n,a=a,b=b))
+  index_max_beta<-which(posterior_beta(p,r=r,n=n,a=a,b=b)==MAX_beta)
+  p_b_max<-p[index_max_beta]
+  
+  MAX_unif<-max(posterior_unif(p,r=r,n=n))
+  index_max_unif<-which(posterior_unif(p,r=r,n=n)==MAX_unif)
+  p_u_max<-p[index_max_unif]
+  
+  lim_inf_u<-qbeta(q,r+1,n-r+1)
+  lim_sup_u<-qbeta(1-q,r+1,n-r+1)
+  
+  lim_inf_b<-qbeta(q,r+a+1,n-r+b+1)
+  lim_sup_b<-qbeta(1-q,r+a+1,n-r+b+1)
+
+  
+  p_b_max_vec<-append(p_b_max_vec,p_b_max)
+  p_u_max_vec<-append(p_u_max_vec,p_u_max)
+  
+  lim_inf_b_vec<-append(lim_inf_b_vec,lim_inf_b)
+  lim_sup_b_vec<-append(lim_sup_b_vec,lim_sup_b)
+  
+  lim_inf_u_vec<-append(lim_inf_u_vec,lim_inf_u)
+  lim_sup_u_vec<-append(lim_sup_u_vec,lim_sup_u)
+  
+}
+```
+
+
+
+```{r}
+
+plot<-ggplot(data.frame(x=1:30,inf=lim_inf_u_vec,sup=lim_sup_u_vec,max=p_u_max_vec))+
+      geom_line(aes(x, inf, colour='inferior limit'))+
+      geom_line(aes(x, sup, colour='superior limit'))+
+      geom_line(aes(x, max, colour='most probable p'))+
+      xlab("n")+
+      ylab("")+
+      ggtitle("Posterior(uniform prior, n=30,r=15)")+
+      scale_y_continuous(limits = c(0,1), breaks = seq(0, 1, by=0.1))+
+      scale_x_continuous(limits = c(0, 30), breaks = seq(0, 30, by=1))+
+      scale_color_manual(values = c('inferior limit' = 'red','superior limit' = 'blue', 'most probable p' = 'green'))
+      theme(axis.text.x = element_text(face="bold.italic", size=10), axis.text.y =
+             element_text(face="bold.italic", size=10), title =
+              element_text(face="bold.italic", size=12))
+  
+plot
+
+```
+
+```{r}
+cat('the most probable p at n=30 is ',p_u_max_vec[30])
+cat('\n')
+cat('the superior limit of the confidentiality interval at n=30 is ',lim_sup_u_vec[30])
+cat('\n')
+cat('the inferior limit of the confidentiality interval at n=30 is ',lim_inf_u_vec[30])
+cat('\n')
+```
+
+
+
+
+```{r}
+plot<-ggplot(data.frame(x=1:30,inf=lim_inf_b_vec,sup=lim_sup_b_vec,max=p_b_max_vec))+
+      geom_line(aes(x, inf, colour='inferior limit'))+
+      geom_line(aes(x, sup, colour='superior limit'))+
+      geom_line(aes(x, max, colour='most probable p'))+
+      xlab("n")+
+      ylab("")+
+      ggtitle("Posterior(uniform prior, n=30,r=15)")+
+      scale_y_continuous(limits = c(0,1), breaks = seq(0, 1, by=0.1))+
+      scale_x_continuous(limits = c(0, 30), breaks = seq(0, 30, by=1))+
+      scale_color_manual(values = c('inferior limit' = 'red','superior limit' = 'blue', 'most probable p' = 'green'))
+      theme(axis.text.x = element_text(face="bold.italic", size=10), axis.text.y =
+             element_text(face="bold.italic", size=10), title =
+              element_text(face="bold.italic", size=12))
+  
+plot
+```
+
+```{r}
+cat('the most probable p at n=30 is ',p_b_max_vec[30])
+cat('\n')
+cat('the superior limit of the confidentiality interval at n=30 is ',lim_sup_b_vec[30])
+cat('\n')
+cat('the inferior limit of the confidentiality interval at n=30 is ',lim_inf_b_vec[30])
+cat('\n')
+```
+
+The final values obtained are the same in both the data analysis methods.
+
+
+
+
+
+
+
+

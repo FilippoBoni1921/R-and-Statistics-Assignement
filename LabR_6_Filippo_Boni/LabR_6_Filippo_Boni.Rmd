@@ -1,0 +1,1476 @@
+---
+title: "R Notebook"
+output:
+    html_document
+---
+
+```{r}
+rm(list=ls())
+```
+
+
+```{r}
+library(ggplot2)
+library(tibble)
+library(dplyr)
+library(ggplot2)
+library(readr)
+library(lubridate)
+library(dplyr)
+library(copula)
+library(viridisLite)
+```
+
+
+#Exercise 1
+
+##point a
+
+The distribution that of y is binomial distribution. Indeed there are two possible states for a patient: he has or he has not the disease
+```{r}
+y<-seq(0,75,1)
+n<-75
+p<-15/100
+failure_dis<-dbinom(y,n,p)/sum(dbinom(y,n,p))
+plot(y,failure_dis,xlab="number of failures", ylab="pdf",main= 'Failure distribution (binomial(n=75,p=0.15))',type="l",col='red',lwd=3,xlim=c(0,30))
+axis(side = 1, seq(0,75,5))
+axis(side = 2, seq(0,0.12,0.02))
+
+```
+##point b
+The frequentist estimator it is the one of a binomial distribution: p=y/n
+```{r}
+n<-75
+y<-6
+
+p <- y/n
+cat('the frequentist estimator is: ',p)
+
+```
+
+##point c
+In order to calculate the parameters α and β given the mean and the the standard deviation we need to consider the two formulas used to calculate this two quantities in the Beta(α,β) distribution and invert them.The resulting formulas are the one used:
+
+Given the mean µ and the standard deviation σ:
+
+- α = (µ^2)*((1-µ)/σ^2 - 1/µ)
+- β = α(1/µ-1)
+
+given this two parameters of a Beta(α,β) and the likelihood distribution which is a binomial distribution I have that the posterior is Beta(α+y,β+n-y)
+```{r ,fig.width=7, fig.height=5}
+
+mu<-0.15
+var<-0.14*0.14
+
+a<-(mu^2)*(((1-mu)/(var))-1/mu) 
+b<-a*((1/mu)-1)
+cat('the parameter α of the prior is:',a)
+cat('\n')
+cat('the parameter β of the prior is:',b)
+cat('\n')
+
+
+step <- 0.001
+q<-seq(from=0,to=1,by=step)
+
+posterior_unnorm<-dbeta(q,y+a,n-y+b)
+
+Z<-sum(posterior_unnorm)*step
+
+post<-posterior_unnorm/Z
+
+plot(q,post,type='l',col='navy',xlab="p", ylab="posterior",xlim = c(0,0.25), cex.lab=1, cex.axis=1, cex.main=1.5, lwd=3)
+lines(q,dbeta(q,a,b),type='l', lwd=2,col='darkgreen',lty=2)
+title("Posterior distribution of y(Beta(0.83,4.68) prior)", line = 1.3,lty=2)
+
+a_post<-y+a
+b_post<-n-y+b
+mean<-a_post/(a_post+b_post)
+sigma<-((a_post*b_post)/(((a_post+b_post)^2)*(a_post+b_post+1)))^(1/2)
+
+abline(v = mean, col="darkred", lwd=2, lty=1)
+abline(v = mean + sigma, col="darkred", lwd=2, lty=2)
+abline(v = mean - sigma, col="darkred", lwd=2, lty=2)
+text(mean, 14, labels=expression("µ=0.085"), pos=3, cex=0.8, col="darkred",  xpd=TRUE)
+text(mean + sigma, 14, labels=expression("σ=µ+0.031"), pos=3, ,cex=0.8, col="darkred",  xpd=TRUE)
+text(mean - sigma, 14, labels=expression("σ"), pos=3, cex=0.8, col="darkred",  xpd=TRUE)
+legend('topleft', legend=c("posterior", "prior"),col=c("navy", "darkgreen"), lty=1, cex=1)
+
+cat('the mean of the posterior is:',mean)
+cat('\n')
+cat('the standard deviation of the posterior is:',sigma)
+
+
+```
+```{r}
+median<-qbeta(0.5,y+a,n-y+b)
+lim_inf<-qbeta(0.025,y+a,n-y+b)
+lim_sup<-qbeta(0.975,y+a,n-y+b)
+ci<-c(lim_inf,lim_sup)
+
+cat('the mean is:',mean)
+cat('\n')
+cat('the variance is:',sigma*sigma)
+cat('\n')
+cat('the median is:',median)
+cat('\n')
+cat('the 95% credibility interval is:[',ci[1],',',ci[2],']')
+cat('\n')
+cat('\n')
+```
+
+
+##point d
+
+Since the null hypothesis is H_0: p>=0.15 we need to perform an hypothesis test on the right tail of the posterior.
+
+```{r}
+p_h0<-pbeta(0.15,y+a,n-y+b)
+acceptance_lim<-qbeta(0.95,y+a,n-y+b)
+
+cat('the critical value of the rejection region is:',acceptance_lim)
+cat('the probability of 1-P(x>=0.15):',1-p_h0)
+
+plot(q,post,type='l',col='navy',xlab="p", ylab="posterior",xlim = c(0,0.25), cex.lab=1, cex.axis=1, cex.main=1.5, lwd=3)
+title("Bayesian Hypothesis test", line = 1.3,lty=2)
+abline(v = acceptance_lim, col="darkorchid", lwd=2, lty=1)
+abline(v = 0.15, col="darkgreen", lwd=2, lty=2)
+abline(h = 0, col="black", lwd=2, lty=1)
+
+text(acceptance_lim, 10, labels=expression("rejection value (P=95%)"),srt=90, pos=3 ,cex=0.8, col="darkorchid",  xpd=TRUE)
+text(0.15, 10, labels=expression("p=0.15"),srt=90, pos=3, cex=0.8, col="darkgreen",  xpd=TRUE)
+pol_x = seq(acceptance_lim,1,len=200)
+polygon(c(acceptance_lim,acceptance_lim,pol_x), 
+        c(0,dbeta(acceptance_lim,y+a,n-y+b),dbeta(pol_x,y+a,n-y+b)),
+        col=adjustcolor("red",alpha.f=0.2))
+legend('topright', legend=c("rejection region"),fill = c("red"), cex=1)
+
+
+
+
+```
+
+The value p=0.15 is in the rejection region. Thus the H_0 hypothesis is rejected for the Bayesian test.
+
+##point e
+
+Lets now plot the distribution of the data. 
+Since the null hypothesis is H_0: p>=0.15 we need to perform an hypothesis test on the left tail of the distribution.
+```{r}
+y<-seq(from=0,to=75,1)
+p=0.15
+dis<-dbinom(y,size=n,prob=p)
+plot(y,dis,xlab="number of failures", ylab="pdf",main= 'Failure distribution(binomial(n=75,p=0.15))',type="h", col='red',lwd=13,xlim=c(0,35))
+axis(side = 1, seq(0,75,5))
+axis(side = 2, seq(0,0.12,0.02))
+
+acceptance_lim<-qbinom(0.05,size=n,prob=p)
+p_5<-pbinom(5,,size=n,prob=p)
+cat('the cdf for y=5 is:',p_5)
+cat('\n')
+p_6<-pbinom(6,,size=n,prob=p)
+cat('the cdf for y=6 is:',p_6)
+cat('\n')
+cat('since  it has the cloasest value to the 5%, y=6 is chosen as the rejection limit')
+
+```
+
+The results are plotted
+```{r}
+
+y<-seq(from=0,to=75,1)
+p=0.15
+dis<-dbinom(y,size=n,prob=p)
+plot(y,dis,xlab="number of failures", ylab="pdf",main= 'Frequentist hypothesis test',type="h", col = ifelse(y < 7,'darkgreen','darkred'),lwd=13,xlim=c(0,35))
+abline(v=6,col='blue',lty=2)
+axis(side = 1, seq(0,75,5))
+axis(side = 2, seq(0,0.12,0.02))
+text(6, 0.08, labels=expression("y = 6"),srt=90, pos=3, cex=0.8, col="blue",  xpd=TRUE)
+legend('topright', legend=c("rejection region"),fill = c("darkgreen"), cex=1)
+```
+
+Since y=6 is in the rejection region, the null hypothesis is rejected also for the frequentist hypothesis test.
+
+
+
+#Exercise2
+
+Here I define the observations and the sum of them. This are the samples that will be used for the analysis.
+```{r}
+
+obs_1<-c(0*109,1*65,2*22,3*3,4*1,5*0)
+obs_2<-c(0*144,1*91,2*32,3*11,4*2,5*0)
+obs_tot<-obs_1+obs_2
+
+
+```
+
+The distribution of the results is a Poisson distribution. Thus assuming a Poisson distribution as likelihood and considering the two possible priors the posterior will be a gamma distribution. The parameters of the gamma distribution depend on the prior
+
+
+##point a
+
+The prior considered is a uniform distribution. For this fact the parameter of the posteriors are:
+
+- α = Sum(y_observed) + 1 
+- λ = number of observations n 
+
+
+Here the results for both observations ar plotted and than shown
+```{r, fig.width=12.5, fig.height=7}
+
+a_1<-sum(obs_1)+1
+lam_1<-109+65+22+3+1+0
+
+a_2<-sum(obs_2)+1
+lam_2<-144+91+32+11+2+0
+
+delta_mu<-0.001
+mu<-seq(from=0,to=1.5,by=delta_mu)
+
+post_1<-dgamma(mu,a_1,lam_1)
+post_2<-dgamma(mu,a_2,lam_2)
+
+mean_1<-a_1/lam_1
+mean_2<-a_2/lam_2
+var_1<-a_1/(lam_1*lam_1)
+var_2<-a_2/(lam_2*lam_2)
+median_1<-qgamma(0.5,a_1,lam_1)
+median_2<-qgamma(0.5,a_2,lam_2)
+
+lim_inf_1<-qgamma(0.025,a_1,lam_1)
+lim_sup_1<-qgamma(0.975,a_1,lam_1)
+ci1<-c(lim_inf_1,lim_sup_1)
+lim_inf_2<-qgamma(0.025,a_2,lam_2)
+lim_sup_2<-qgamma(0.975,a_2,lam_2)
+ci2<-c(lim_inf_2,lim_sup_2)
+
+
+plot(mu,post_1,type='l', lwd=2,col='red',xlab = 'µ', ylab = 'posterior', main='Posteriors of the two observations(uniform prior)', cex.main=2, cex.lab=1.5, cex.axis=1.5,ylim=c(0,8),xlim=c(0.4,0.9))
+lines(mu,post_2,type='l', lwd=2,col='blue')
+abline(v = mean_1 + sqrt(var_1), col="darkred", lwd=2, lty=2)
+abline(v = mean_1 - sqrt(var_1), col="darkred", lwd=2, lty=2)
+abline(v = mean_2 + sqrt(var_2), col="darkblue", lwd=2, lty=2)
+abline(v = mean_2 - sqrt(var_2), col="darkblue", lwd=2, lty=2)
+abline(v=mean_1,col='darkred',lty=5)
+abline(v=mean_2,col='darkblue',lty=5)
+abline(v=ci1[1],col='darkred',lty=4)
+abline(v=ci1[2],col='darkred',lty=4)
+abline(v=ci2[1],col='darkblue',lty=4)
+abline(v=ci2[2],col='darkblue',lty=4)
+text(mean_1, 6.5, labels=expression("µ"),srt=90, pos=3, cex=0.8, col="darkred",  xpd=TRUE)
+text(mean_2, 6.5, labels=expression("µ"),srt=90, pos=3, cex=0.8, col="darkblue",  xpd=TRUE)
+text(mean_1 + sqrt(var_1), 7, labels=expression("+sigma"),srt=270, pos=3, cex=1, col="darkred",  xpd=TRUE)
+text(mean_1 - sqrt(var_1), 7, labels=expression("-sigma"),srt=90, pos=3, cex=1, col="darkred",  xpd=TRUE)
+text(mean_2 - sqrt(var_2), 7, labels=expression("-sigma"),srt=90, pos=3, cex=1, col="darkblue",  xpd=TRUE)
+text(mean_2 + sqrt(var_2), 7, labels=expression("+sigma"),srt=270, pos=3, cex=1, col="darkblue", xpd=TRUE)
+text(ci1[1], 7.5, labels=expression("p=2.5%"),srt=270, pos=3, cex=1, col="darkred",  xpd=TRUE)
+text(ci1[2], 7.5, labels=expression("p=97.5%"),srt=90, pos=3, cex=1, col="darkred",  xpd=TRUE)
+text(ci2[1], 7.5, labels=expression("p=2.5%"),srt=90, pos=3, cex=1, col="darkblue",  xpd=TRUE)
+text(ci2[2], 7.5, labels=expression("p=97.5%"),srt=270, pos=3, cex=1, col="darkblue", xpd=TRUE)
+pol_x = seq(ci1[1],ci1[2],len=200)
+polygon(c(ci1[1],pol_x,ci1[2]), 
+        c(0,dgamma(pol_x,a_1,lam_1),0),
+        col=adjustcolor("red",alpha.f=0.2))
+pol_x = seq(ci2[1],ci2[2],len=200)
+polygon(c(ci2[1],pol_x,ci2[2]), 
+        c(0,dgamma(pol_x,a_2,lam_2),0),
+        col=adjustcolor("blue",alpha.f=0.2))
+legend('topleft', legend=c("observation 1", "observation 2"),col=c("darkred", "darkblue"), lty=1, cex=1)
+
+
+```
+
+
+```{r}
+cat('OBSERVATION 1 RESULTS (uniform prior)')
+cat('\n')
+cat('the mean is:',mean_1)
+cat('\n')
+cat('the variance is:',var_1)
+cat('\n')
+cat('the median is:',median_1)
+cat('\n')
+cat('the 95% credibility interval is:[',ci1[1],',',ci1[2],']')
+cat('\n')
+cat('\n')
+cat('OBSERVATION 2 RESULTS (uniform prior)')
+cat('\n')
+cat('the mean is:',mean_2)
+cat('\n')
+cat('the variance is:',var_2)
+cat('\n')
+cat('the median is:',median_2)
+cat('\n')
+cat('the 95% credibility interval is:[',ci2[1],',',ci2[2],']')
+
+```
+
+
+Here the results obtained by summing the two observations are presented.
+```{r, fig.width=12.5, fig.height=7}
+a_tot<-sum(obs_tot)+1
+lam_tot<-lam_1+lam_2
+
+mu<-seq(from=0.3,to=1,by=0.001)
+
+post_tot<-dgamma(mu,a_tot,lam_tot)
+
+mean_tot<-a_tot/lam_tot
+var_tot<-a_tot/(lam_tot*lam_tot)
+median_tot<-qgamma(0.5,a_tot,lam_tot)
+
+lim_inf_tot<-qgamma(0.025,a_tot,lam_tot)
+lim_sup_tot<-qgamma(0.975,a_tot,lam_tot)
+citot<-c(lim_inf_tot,lim_sup_tot)
+
+
+plot(mu,post_tot,type='l',col='darkgreen',xlab = 'µ', ylab = 'posterior', main='Posteriors of the sum of two observations(uniform prior)', cex.main=2, cex.lab=1.5, cex.axis=1.5)
+abline(v = citot[1], col="darkgreen", lwd=2, lty=2)
+abline(v = citot[2], col="darkgreen", lwd=2, lty=2)
+abline(v=mean_tot,col='darkgreen',lty=5)
+abline(v = mean_tot + sqrt(var_tot), col="darkgreen", lwd=2, lty=2)
+abline(v = mean_tot - sqrt(var_tot), col="darkgreen", lwd=2, lty=2)
+text(mean_tot, 4, labels=expression("µ"),srt=90, pos=3, cex=0.8, col="darkgreen",  xpd=TRUE)
+text(mean_tot + sqrt(var_tot), 4, labels=expression("+sigma"),srt=270, pos=3, cex=1, col="darkgreen",  xpd=TRUE)
+text(mean_tot - sqrt(var_tot), 4, labels=expression("-sigma"),srt=90, pos=3, cex=1, col="darkgreen",  xpd=TRUE)
+text(citot[1], 4, labels=expression("p=2.5%"),srt=90, pos=3, cex=1, col="darkgreen",  xpd=TRUE)
+text(citot[2], 4, labels=expression("p=97.5%"),srt=270, pos=3, cex=1, col="darkgreen", xpd=TRUE)
+pol_x = seq(citot[1],citot[2],len=200)
+polygon(c(citot[1],pol_x,citot[2]), c(0,dgamma(pol_x,a_tot,lam_tot),0),col=adjustcolor("green",alpha.f=0.2))
+
+
+
+```
+
+```{r}
+cat('OBSERVATION TOT RESULTS (uniform prior)')
+cat('\n')
+cat('the mean is:',mean_tot)
+cat('\n')
+cat('the variance is:',var_tot)
+cat('\n')
+cat('the median is:',median_tot)
+cat('\n')
+cat('the 95% credibility interval is:[',citot[1],',',citot[2],']')
+cat('\n')
+cat('\n')
+```
+
+##point b
+
+The prior considered is a jeffrey prior. For this fact the parameter of the posteriors are:
+
+- α = Sum(y_observed) + 1/2 
+- λ = number of observations n (as before)
+
+
+Here the results for both observations ar plotted and than shown
+
+```{r , fig.width=12.5, fig.height=7}
+
+a_1<-sum(obs_1)+1/2
+lam_1<-109+65+22+3+1+0
+
+a_2<-sum(obs_2)+1/2
+lam_2<-144+91+32+11+2+0
+
+a_tot<-sum(obs_tot)+1/2
+lam_tot<-length(obs_tot)
+
+mu<-seq(from=0,to=1,by=0.001)
+
+post_1<-dgamma(mu,a_1,lam_1)
+post_2<-dgamma(mu,a_2,lam_2)
+post_tot<-dgamma(mu,a_tot,lam_tot)
+
+mean_1<-a_1/lam_1
+mean_2<-a_2/lam_2
+var_1<-a_1/(lam_1*lam_1)
+var_2<-a_2/(lam_2*lam_2)
+median_1<-qgamma(0.5,a_1,lam_1)
+median_2<-qgamma(0.5,a_2,lam_2)
+
+lim_inf_1<-qgamma(0.025,a_1,lam_1)
+lim_sup_1<-qgamma(0.975,a_1,lam_1)
+ci1<-c(lim_inf_1,lim_sup_1)
+lim_inf_2<-qgamma(0.025,a_2,lam_2)
+lim_sup_2<-qgamma(0.975,a_2,lam_2)
+ci2<-c(lim_inf_2,lim_sup_2)
+
+
+plot(mu,post_1,type='l', lwd=2,col='red',xlab = 'µ', ylab = 'posterior', main='Posteriors of the two observations(jeffrey prior)', cex.main=2, cex.lab=1.5, cex.axis=1.5,ylim=c(0,9),xlim=c(0.4,0.9))
+lines(mu,post_2,type='l', lwd=2,col='blue')
+abline(v = mean_1 + sqrt(var_1), col="darkred", lwd=2, lty=2)
+abline(v = mean_1 - sqrt(var_1), col="darkred", lwd=2, lty=2)
+abline(v = mean_2 + sqrt(var_2), col="darkblue", lwd=2, lty=2)
+abline(v = mean_2 - sqrt(var_2), col="darkblue", lwd=2, lty=2)
+abline(v=mean_1,col='darkred',lty=5)
+abline(v=mean_2,col='darkblue',lty=5)
+abline(v=ci1[1],col='darkred',lty=4)
+abline(v=ci1[2],col='darkred',lty=4)
+abline(v=ci2[1],col='darkblue',lty=4)
+abline(v=ci2[2],col='darkblue',lty=4)
+text(mean_1, 6.5, labels=expression("µ"),srt=90, pos=3, cex=0.8, col="darkred",  xpd=TRUE)
+text(mean_2, 6.5, labels=expression("µ"),srt=90, pos=3, cex=0.8, col="darkblue",  xpd=TRUE)
+text(mean_1 + sqrt(var_1), 7, labels=expression("+sigma"),srt=270, pos=3, cex=1, col="darkred",  xpd=TRUE)
+text(mean_1 - sqrt(var_1), 7, labels=expression("-sigma"),srt=90, pos=3, cex=1, col="darkred",  xpd=TRUE)
+text(mean_2 - sqrt(var_2), 7, labels=expression("-sigma"),srt=90, pos=3, cex=1, col="darkblue",  xpd=TRUE)
+text(mean_2 + sqrt(var_2), 7, labels=expression("+sigma"),srt=270, pos=3, cex=1, col="darkblue", xpd=TRUE)
+text(ci1[1], 7.55, labels=expression("p=2.5%"),srt=270, pos=3, cex=1, col="darkred",  xpd=TRUE)
+text(ci1[2], 7.55, labels=expression("p=97.5%"),srt=90, pos=3, cex=1, col="darkred",  xpd=TRUE)
+text(ci2[1], 7.55, labels=expression("p=2.5%"),srt=90, pos=3, cex=1, col="darkblue",  xpd=TRUE)
+text(ci2[2], 7.55, labels=expression("p=97.5%"),srt=270, pos=3, cex=1, col="darkblue", xpd=TRUE)
+pol_x = seq(ci1[1],ci1[2],len=200)
+polygon(c(ci1[1],pol_x,ci1[2]), 
+        c(0,dgamma(pol_x,a_1,lam_1),0),
+        col=adjustcolor("red",alpha.f=0.2))
+pol_x = seq(ci2[1],ci2[2],len=200)
+polygon(c(ci2[1],pol_x,ci2[2]), 
+        c(0,dgamma(pol_x,a_2,lam_2),0),
+        col=adjustcolor("blue",alpha.f=0.2))
+legend('topleft', legend=c("observation 1", "observation 2"),col=c("darkred", "darkblue"), lty=1, cex=1)
+
+
+```
+
+```{r}
+cat('OBSERVATION 1 RESULTS (jeffrey prior)')
+cat('\n')
+cat('the mean is:',mean_1)
+cat('\n')
+cat('the variance is:',var_1)
+cat('\n')
+cat('the median is:',median_1)
+cat('\n')
+cat('the 95% credibility interval is:[',ci1[1],',',ci1[2],']')
+cat('\n')
+cat('\n')
+cat('OBSERVATION 2 RESULTS (jeffrey prior)')
+cat('\n')
+cat('the mean is:',mean_2)
+cat('\n')
+cat('the variance is:',var_2)
+cat('\n')
+cat('the median is:',median_2)
+cat('\n')
+cat('the 95% credibility interval is:[',ci2[1],',',ci2[2],']')
+```
+
+
+
+```{r, fig.width=12.5, fig.height=7}
+a_tot<-sum(obs_tot)+1/2
+lam_tot<-lam_1+lam_2
+
+mu<-seq(from=0,to=1,by=0.001)
+
+post_tot<-dgamma(mu,a_tot,lam_tot)
+
+mean_tot<-a_tot/lam_tot
+var_tot<-a_tot/(lam_tot*lam_tot)
+median_tot<-qgamma(0.5,a_tot,lam_tot)
+
+lim_inf_tot<-qgamma(0.025,a_tot,lam_tot)
+lim_sup_tot<-qgamma(0.975,a_tot,lam_tot)
+citot<-c(lim_inf_tot,lim_sup_tot)
+
+
+plot(mu,post_tot,type='l',col='darkgreen',xlab = 'µ', ylab = 'posterior', main='Posteriors of the sum of two observations(jeffrey prior)', cex.main=2, cex.lab=1.5, cex.axis=1.5,xlim=c(0.5,0.9),ylim=c(0,12))
+abline(v = citot[1], col="darkgreen", lwd=2, lty=2)
+abline(v = citot[2], col="darkgreen", lwd=2, lty=2)
+abline(v=mean_tot,col='darkgreen',lty=5)
+abline(v = mean_tot + sqrt(var_tot), col="darkgreen", lwd=2, lty=2)
+abline(v = mean_tot - sqrt(var_tot), col="darkgreen", lwd=2, lty=2)
+text(mean_tot, 4, labels=expression("µ"),srt=90, pos=3, cex=0.8, col="darkgreen",  xpd=TRUE)
+text(mean_tot + sqrt(var_tot), 4, labels=expression("+sigma"),srt=270, pos=3, cex=1, col="darkgreen",  xpd=TRUE)
+text(mean_tot - sqrt(var_tot), 4, labels=expression("-sigma"),srt=90, pos=3, cex=1, col="darkgreen",  xpd=TRUE)
+text(citot[1], 4, labels=expression("p=2.5%"),srt=90, pos=3, cex=1, col="darkgreen",  xpd=TRUE)
+text(citot[2], 4, labels=expression("p=97.5%"),srt=270, pos=3, cex=1, col="darkgreen", xpd=TRUE)
+pol_x = seq(citot[1],citot[2],len=200)
+polygon(c(citot[1],pol_x,citot[2]), c(0,dgamma(pol_x,a_tot,lam_tot),0),col=adjustcolor("green",alpha.f=0.2))
+
+```
+
+```{r}
+
+cat('OBSERVATION TOT RESULTS (jeffrey prior)')
+cat('\n')
+cat('the mean is:',mean_tot)
+cat('\n')
+cat('the variance is:',var_tot)
+cat('\n')
+cat('the median is:',median_tot)
+cat('\n')
+cat('the 95% credibility interval is:[',citot[1],',',citot[2],']')
+cat('\n')
+cat('\n')
+
+```
+
+
+
+#Exercise3
+
+##point a
+
+Here I find the frequentist estimator, basing on the fact that the distribution of the observation is binomial because there are just two possible outcomes.
+```{r}
+n<-116
+y<-11
+p_freq<-11/116
+
+cat('the frequentist estimator is:',p_freq)
+```
+
+
+##point b and c
+
+Here I consider as likelihood a binomial distribution. Combining this with a beta prior I will obtain a Beta distribution as posterior. The parameters of the posterior are calculated as usual. 
+
+Here the results are plotted and then shown.
+```{r, fig.width=10, fig.height=7}
+
+step <- 0.001
+q<-seq(from=0,to=1,by=step)
+
+a<-1
+b<-10
+
+posterior_unnorm<-dbeta(q,y+a,n-y+b)
+
+Z<-sum(posterior_unnorm)*step
+
+post<-posterior_unnorm/Z
+
+
+mean<-(y+a)/(y+a+n-y+b)
+median<-qbeta(0.5,y+a,n-y+b)
+a_post<-(y+a)
+b_post<-n-y+b
+var<-((a_post*b_post)/(((a_post+b_post)^2)*(a_post+b_post+1)))
+
+ind_max<-which(post==max(post))
+p_bayes<-q[ind_max]
+
+lim_inf<-qbeta(0.025,y+a,n-y+b)
+lim_sup<-qbeta(0.975,y+a,n-y+b)
+ci<-c(lim_inf,lim_sup)
+
+
+
+plot(q,post,type='l',col='darkorchid',xlab = 'p', ylab = 'posterior', main='Posterior(first observations,Beta(1,10)) ', cex.main=2, cex.lab=1.5, cex.axis=1.5, xlim=c(0,0.3))
+abline(v = ci[1], col="darkorchid", lwd=2, lty=2)
+abline(v = ci[2], col="darkorchid", lwd=2, lty=2)
+abline(v=mean,col='darkorchid',lty=5)
+abline(v=p_bayes,col='darkorchid',lty=5)
+abline(v=mean+sqrt(var),col='darkorchid',lty=3)
+abline(v=mean-sqrt(var),col='darkorchid',lty=3)
+text(mean, 12, labels=expression("µ"),srt=90, pos=3, cex=1, col="darkorchid",  xpd=TRUE)
+text(p_bayes, 12, labels=expression("max posterior"),srt=90, pos=3, cex=1, col="darkorchid",  xpd=TRUE)
+text(mean+sqrt(var), 12, labels=expression("+sigma"),srt=270, pos=3, cex=1, col="darkorchid",  xpd=TRUE)
+text(mean-sqrt(var), 12, labels=expression("-sigma"),srt=90, pos=3, cex=1, col="darkorchid",  xpd=TRUE)
+text(ci[1], 10, labels=expression("p=2.5%"),srt=90, pos=3, cex=1, col="darkorchid",  xpd=TRUE)
+text(ci[2], 10, labels=expression("p=97.5%"),srt=270, pos=3, cex=1, col="darkorchid", xpd=TRUE)
+pol_x = seq(ci[1],ci[2],len=200)
+polygon(c(ci[1],pol_x,ci[2]), c(0,dbeta(pol_x,y+a,n-y+b),0),col=adjustcolor("orchid",alpha.f=0.2))
+
+```
+
+```{r}
+cat('FIRSTS OBSERVATIONS RESULTS (Beta(1,10) prior)')
+cat('\n')
+cat('the mean is:',mean)
+cat('\n')
+cat('the variance is:',var)
+cat('\n')
+cat('the median is:',median)
+cat('\n')
+cat('the 95% credibility interval is:[',ci[1],',',ci[2],']')
+cat('\n')
+cat('the bayesian estimator is the mean so it is:',mean)
+cat('\n')
+cat('the most probable value is:',p_bayes)
+```
+
+Since the null hypothesis is p=0.1, the hypothesis test is a two sided hypothesis test in both bayesian and frequentist hypothesis test.
+
+##point d
+
+Bayesian limits
+```{r}
+acceptance_lim_sup<-qbeta(0.975,y+a,n-y+b)
+acceptance_lim_inf<-qbeta(0.025,y+a,n-y+b)
+
+cat('the left critical value is:',acceptance_lim_inf)
+cat('\n')
+cat('the right critical value is:',acceptance_lim_sup)
+
+```
+
+```{r, fig.width=10, fig.height=7}
+plot(q,post,type='l',col='darkorchid',xlab = 'p', ylab = 'posterior', main='Posterior(first observations,Beta(1,10)) ', cex.main=2, cex.lab=1.5, cex.axis=1.5, xlim=c(0,0.3))
+abline(v = ci[1], col="darkorchid", lwd=2, lty=2)
+abline(v = ci[2], col="darkorchid", lwd=2, lty=2)
+abline(v=0.1,col='darkorchid',lty=5)
+text(0.1, 12, labels=expression("p=0.1"),srt=90, pos=3, cex=1, col="darkorchid",  xpd=TRUE)
+text(ci[1], 10, labels=expression("p=2.5%"),srt=90, pos=3, cex=1, col="darkorchid",  xpd=TRUE)
+text(ci[2], 10, labels=expression("p=97.5%"),srt=270, pos=3, cex=1, col="darkorchid", xpd=TRUE)
+pol_x = seq(0,ci[1],len=200)
+polygon(c(0,pol_x,ci[1]), c(0,dbeta(pol_x,y+a,n-y+b),dbeta(0,y+a,n-y+b)),col=adjustcolor("red",alpha.f=0.2))
+pol_x = seq(ci[2],1,len=200)
+polygon(c(ci[2],pol_x,1), c(0,dbeta(pol_x,y+a,n-y+b),dbeta(1,y+a,n-y+b)),col=adjustcolor("red",alpha.f=0.2))
+legend('topright',c('rejection region'),fill=c('red'))
+```
+
+The value p=0.1 is outside the rejection regions. For the Bayesian hypothesis test the null hypothesis is not rejected.
+
+
+Frequentist limits.
+
+Here I plot the distribution of the data, trying to find the limits of the rejection region. 
+```{r}
+y<-seq(from=0,to=116,1)
+p=0.1
+dis<-dbinom(y,size=n,prob=p)
+plot(y,dis,xlab="y", ylab="pdf",main= 'X level distribution(binomial(n=116,p=0.1))',type="h", col='orchid',lwd=13,xlim=c(0,35))
+axis(side = 1, seq(0,116,5))
+axis(side = 2, seq(0,0.12,0.02))
+
+
+p_18<-pbinom(18,size=n,prob=p)
+cat('the cdf for y=18 is:',p_18)
+cat('\n')
+p_5<-pbinom(5,size=n,prob=p)
+cat('the cdf for y=6 is:',p_5)
+cat('\n')
+cat('since it has the closest value to the 97.5%, y=18 is chosen as the rejection limit')
+cat('\n')
+cat('since it has the closest value to the 2.5%, y=5 is chosen as the rejection limit')
+```
+```{r}
+y<-seq(from=0,to=116,1)
+p=0.1
+dis<-dbinom(y,size=n,prob=p)
+plot(y,dis,xlab="y", ylab="pdf",main= 'X level distribution(binomial(n=116,p=0.1))',type="h", col = ifelse(y < 6 | y>17 ,'darkgreen','darkorchid'),lwd=13,xlim=c(0,35))
+axis(side = 1, seq(0,116,5))
+axis(side = 2, seq(0,0.12,0.02))
+
+abline(v=11,col='black',lty=5)
+text(11, 0.08, labels=expression("y = 11"),srt=90, pos=3, cex=0.8, col="black",  xpd=TRUE)
+legend('topright', legend=c("rejection region"),fill = c("darkgreen"), cex=1)
+```
+Since the value y=11 is outside the rejection region, for the frequentist hypothesis test the null hypothesis is not rejected.
+
+
+##point e
+
+Now the new data are analyzed
+```{r}
+n_2<-165
+y_2<-9
+p_freq_2<-9/165
+cat('the frequentist estimator is:',p_freq_2)
+```
+
+
+##point f and g
+
+The strategy used to calculate the needed values is  the same as before.
+```{r, fig.width=12.5, fig.height=7}
+
+step <- 0.001
+q<-seq(from=0,to=1,by=step)
+
+a<-1
+b<-10
+
+a_2<-y_2+a
+b_2<-n_2-y_2+b
+
+posterior_unnorm<-dbeta(q,a_2,b_2)
+
+Z<-sum(posterior_unnorm)*step
+
+post<-posterior_unnorm/Z
+
+ind_max<-which(post==max(post))
+p_bayes<-q[ind_max]
+
+mean<-(a_2)/(a_2+b_2)
+median<-qbeta(0.5,a_2,b_2)
+var<-((a_2*b_2)/(((a_2+b_2)^2)*(a_2+b_2+1)))
+
+ind_max<-which(post==max(post))
+p_bayes<-q[ind_max]
+
+lim_inf<-qbeta(0.025,a_2,b_2)
+lim_sup<-qbeta(0.975,a_2,b_2)
+ci<-c(lim_inf,lim_sup)
+
+plot(q,post,type='l',col='darkorange',xlab = 'µ', ylab = 'posterior', main='Posterior(second observations,Beta(1,10)) ', cex.main=2, cex.lab=1.5, cex.axis=1.5, xlim=c(0,0.25))
+abline(v = ci[1], col="darkorange", lwd=2, lty=2)
+abline(v = ci[2], col="darkorange", lwd=2, lty=2)
+abline(v=mean,col="darkorange",lty=5)
+abline(v=p_bayes,col="darkorange",lty=5)
+abline(v=mean+sqrt(var),col="darkorange",lty=3)
+abline(v=mean-sqrt(var),col="darkorange",lty=3)
+text(mean, 12, labels=expression("µ"),srt=90, pos=3, cex=1, col="darkorange",  xpd=TRUE)
+text(p_bayes, 12, labels=expression("max post"),srt=90, pos=3, cex=1, col="darkorange",  xpd=TRUE)
+text(mean+sqrt(var), 13, labels=expression("+sigma"),srt=270, pos=3, cex=1, col="darkorange",  xpd=TRUE)
+text(mean-sqrt(var), 13, labels=expression("-sigma"),srt=90, pos=3, cex=1, col="darkorange",  xpd=TRUE)
+text(ci[1], 10, labels=expression("p=2.5%"),srt=90, pos=3, cex=1, col="darkorange",  xpd=TRUE)
+text(ci[2], 10, labels=expression("p=97.5%"),srt=270, pos=3, cex=1, col="darkorange", xpd=TRUE)
+pol_x = seq(ci[1],ci[2],len=200)
+polygon(c(ci[1],pol_x,ci[2]), c(0,dbeta(pol_x,a_2,b_2),0),col=adjustcolor("orange",alpha.f=0.2))
+
+```
+
+```{r}
+cat('SECOND OBSERVATIONS RESULTS (Beta(1,10) prior)')
+cat('\n')
+cat('the mean is:',mean)
+cat('\n')
+cat('the variance is:',var)
+cat('\n')
+cat('the median is:',median)
+cat('\n')
+cat('the 95% credibility interval is:[',ci[1],',',ci[2],']')
+cat('\n')
+ind_max<-which(post==max(post))
+p_bayes<-q[ind_max]
+cat('the bayesian estimator is the mean so it is:',mean)
+cat('\n')
+cat('the most probable value is:',p_bayes)
+```
+
+
+##point h
+
+Bayesian limits
+```{r}
+acceptance_lim_sup<-qbeta(0.975,a_2,b_2)
+acceptance_lim_inf<-qbeta(0.025,a_2,b_2)
+
+cat('the left critical value is:',acceptance_lim_inf)
+cat('\n')
+cat('the right critical value is:',acceptance_lim_sup)
+
+```
+
+```{r, fig.width=12.5, fig.height=7}
+plot(q,post,type='l',col='darkorange',xlab = 'p', ylab = 'posterior', main='Bayesian hypothesis test(second observations,Beta(1,10)) ', cex.main=2, cex.lab=1.5, cex.axis=1.5, xlim=c(0,0.25))
+abline(v = ci[1], col="darkorange", lwd=2, lty=2)
+abline(v = ci[2], col="darkorange", lwd=2, lty=2)
+abline(v=0.1,col='darkorange',lty=5)
+text(0.1, 12, labels=expression("p=0.1"),srt=90, pos=3, cex=1, col="darkorange",  xpd=TRUE)
+text(ci[1], 10, labels=expression("p=2.5%"),srt=90, pos=3, cex=1, col="darkorange",  xpd=TRUE)
+text(ci[2], 10, labels=expression("p=97.5%"),srt=90, pos=3, cex=1, col="darkorange", xpd=TRUE)
+pol_x = seq(0,ci[1],len=200)
+polygon(c(0,pol_x,ci[1]), c(0,dbeta(pol_x,a_2,b_2),dbeta(0,a_2,b_2)),col=adjustcolor("red",alpha.f=0.2))
+pol_x = seq(ci[2],1,len=200)
+polygon(c(ci[2],pol_x,1), c(0,dbeta(pol_x,a_2,b_2),dbeta(1,a_2,b_2)),col=adjustcolor("red",alpha.f=0.2))
+legend('topright',c('rejection region'),fill=c('red'))
+
+```
+
+The value p=0.1 is inside the rejection regions. For the Bayesian hypothesis test the null hypothesis is rejected.
+
+
+
+```{r}
+y<-seq(from=0,to=165,1)
+p=0.1
+dis<-dbinom(y,size=n_2,prob=p)
+plot(y,dis,xlab="y", ylab="pdf",main= 'X level distribution(binomial(n=165,p=0.1))',type="h", col='orange',lwd=13,xlim=c(0,35))
+axis(side = 1, seq(0,125,5))
+axis(side = 2, seq(0,0.12,0.02))
+
+
+p_24<-pbinom(24,size=n_2,prob=0.1)
+cat('the cdf for y=24 is:',p_24)
+cat('\n')
+p_9<-pbinom(9,size=n_2,prob=0.1)
+cat('the cdf for y=9 is:',p_9)
+cat('\n')
+cat('since it has the closest value to the 97.5%, y=24 is chosen as the rejection limit')
+cat('\n')
+cat('since it has the closest value to the 2.5%, y=9 is chosen as the rejection limit')
+```
+
+```{r}
+y<-seq(from=0,to=165,1)
+p=0.1
+dis<-dbinom(y,size=165,prob=p)
+plot(y,dis,xlab="y", ylab="pdf",main= 'X level distribution(binomial(n=165,p=0.1))',type="h", col = ifelse(y < 10 | y>23 ,'darkgreen','darkorange'),lwd=13,xlim=c(0,35))
+axis(side = 1, seq(0,125,5))
+axis(side = 2, seq(0,0.12,0.02))
+
+abline(v=9,col='black',lty=5)
+text(9, 0.08, labels=expression("y = 9"),srt=90, pos=3, cex=0.8, col="black",  xpd=TRUE)
+legend('topright', legend=c("rejection region"),fill = c("darkgreen"), cex=1)
+```
+Since the value y=9 is inside the rejection region, for the frequentist hypothesis test the null hypothesis is rejected.
+
+##point f and g
+
+If I consider the previous posterior as the prior I obtain again a Beta distribution with two different parameters:
+
+- α : y_2(data from second observation) + α_1 (this is the alpha of the previous posterior: y_1 + α_0(alpha of the original prior) )
+- β : n_2(number of sample of the second observation) - y_2 - β_1 (beta from previous posterior: n_1 - y_1 - β_0)
+
+```{r, fig.width=12.5, fig.height=7}
+
+step <- 0.001
+q<-seq(from=0,to=1,by=step)
+
+a<-1
+b<-10
+
+y_2<-9
+y<-11
+n_2<-165
+n<-116
+
+a_2<-y_2+y+a
+b_2<-n_2+n-y_2-y+b
+
+
+posterior_unnorm<-dbeta(q,a_2,b_2)
+
+Z<-sum(posterior_unnorm)*step
+
+post<-posterior_unnorm/Z
+
+ind_max<-which(post==max(post))
+p_bayes<-q[ind_max]
+
+mean<-(a_2)/(a_2+b_2)
+median<-qbeta(0.5,a_2,b_2)
+var<-((a_2*b_2)/(((a_2+b_2)^2)*(a_2+b_2+1)))
+
+lim_inf<-qbeta(0.025,a_2,b_2)
+lim_sup<-qbeta(0.975,a_2,b_2)
+ci<-c(lim_inf,lim_sup)
+
+plot(q,post,type='l',col='darkblue',xlab = 'p', ylab = 'posterior', main='Posterior(second observations,prior=Beta(12,115)) ', cex.main=2, cex.lab=1.5, cex.axis=1.5, xlim=c(0,0.25))
+abline(v = ci[1], col="darkblue", lwd=2, lty=2)
+abline(v = ci[2], col="darkblue", lwd=2, lty=2)
+abline(v=mean,col="darkblue",lty=5)
+abline(v=mean+sqrt(var),col="darkblue",lty=3)
+abline(v=mean-sqrt(var),col="darkblue",lty=3)
+abline(v=p_bayes,col="darkblue",lty=5)
+text(mean, 12, labels=expression("µ"),srt=270, pos=3, cex=1, col="darkblue",  xpd=TRUE)
+text(p_bayes, 12, labels=expression("max post"),srt=90, pos=3, cex=1, col="darkblue",  xpd=TRUE)
+text(mean+sqrt(var), 17, labels=expression("+sigma"),srt=270, pos=3, cex=1, col="darkblue",  xpd=TRUE)
+text(mean-sqrt(var), 17, labels=expression("-sigma"),srt=90, pos=3, cex=1, col="darkblue",  xpd=TRUE)
+text(ci[1], 10, labels=expression("p=2.5%"),srt=90, pos=3, cex=1, col="darkblue",  xpd=TRUE)
+text(ci[2], 10, labels=expression("p=97.5%"),srt=270, pos=3, cex=1, col="darkblue", xpd=TRUE)
+pol_x = seq(ci[1],ci[2],len=200)
+polygon(c(ci[1],pol_x,ci[2]), c(0,dbeta(pol_x,a_2,b_2),0),col=adjustcolor("darkblue",alpha.f=0.2))
+
+```
+
+```{r}
+cat('SECOND OBSERVATIONS RESULTS (Beta(12,115) prior)')
+cat('\n')
+cat('the mean is:',mean)
+cat('\n')
+cat('the variance is:',var)
+cat('\n')
+cat('the median is:',median)
+cat('\n')
+cat('the 95% credibility interval is:[',ci[1],',',ci[2],']')
+cat('\n')
+ind_max<-which(post==max(post))
+p_bayes<-q[ind_max]
+cat('the bayesian estimator is the mean so it is:',mean)
+cat('\n')
+cat('the most probable value is:',p_bayes)
+```
+
+##point h
+
+Bayesian limits
+```{r}
+acceptance_lim_sup<-qbeta(0.975,a_2,b_2)
+acceptance_lim_inf<-qbeta(0.025,a_2,b_2)
+cat('the left critical value is:',acceptance_lim_inf)
+cat('\n')
+cat('the right critical value is:',acceptance_lim_sup)
+
+```
+
+```{r, fig.width=12.5, fig.height=7}
+plot(q,post,type='l',col='darkblue',xlab = 'p', ylab = 'posterior', main='Posterior(second observations,prior=Beta(12,115)) ', cex.main=2, cex.lab=1.5, cex.axis=1.5, xlim=c(0,0.25))
+abline(v = ci[1], col="darkblue", lwd=2, lty=2)
+abline(v = ci[2], col="darkblue", lwd=2, lty=2)
+abline(v = 0.1, col="darkblue", lwd=2, lty=2)
+text(0.1, 10, labels=expression("p=0.1"),srt=90, pos=3, cex=1, col="darkblue",  xpd=TRUE)
+text(ci[1], 10, labels=expression("p=2.5%"),srt=90, pos=3, cex=1, col="darkblue",  xpd=TRUE)
+text(ci[2], 10, labels=expression("p=97.5%"),srt=270, pos=3, cex=1, col="darkblue", xpd=TRUE)
+pol_x = seq(0,ci[1],len=200)
+polygon(c(0,pol_x,ci[1]), c(0,dbeta(pol_x,a_2,b_2),dbeta(0,a_2,b_2)),col=adjustcolor("red",alpha.f=0.2))
+pol_x = seq(ci[2],1,len=200)
+polygon(c(ci[2],pol_x,1), c(0,dbeta(pol_x,a_2,b_2),dbeta(1,a_2,b_2)),col=adjustcolor("red",alpha.f=0.2))
+legend('topright',c('rejection region'),fill=c('red'))
+```
+
+The value p=0.1 is outside the rejection regions. For the Bayesian hypothesis test the null hypothesis is not rejected.
+
+
+
+#Exercise 4
+
+```{r}
+library(coda)
+library(rjags)
+```
+
+I create the data in order to calculate the posterior. In order to do that I create a dataset of 75 values equal to 0. Then I randomly select 6 indexes and I assign to that indexes a value equal to 1. 
+```{r}
+data <- NULL
+X<-rep(0,75)
+index<-sample(75,6)
+for (i in index) {
+  
+  X[i]=1
+}
+
+data$X <-X
+data$a <- 0.83
+data$b<-4.63
+data$n_next <- 100
+```
+
+
+```{r}
+jagsModel <- jags.model("model4.bug",data=data)
+update(jagsModel,1000)
+```
+
+```{r}
+chain <- coda.samples(jagsModel, c("p","y"), n.iter=20000) 
+print(summary(chain))
+```
+
+
+```{r}
+plot(chain[,1], col="navy")
+title('trace of p and density of p')
+```
+
+```{r}
+df<-as.data.frame(as.mcmc(chain))
+```
+
+```{r}
+plot(df$y, col="navy",type='l',ylab='')
+title('trace of predicted data y')
+ty <- table(df$y)
+barplot(ty, col="navy", main ='',xlab='y',ylab = 'frequency')
+title('histogram of predicted data y')
+
+```
+
+```{r}
+results<-(summary(chain))
+results
+```
+
+
+```{r}
+cat('the mean of p is: ',results$statistics[1])
+cat('\n')
+sd<-results$statistics[3]
+cat('the variance of p is: ', sd*sd)
+cat('\n')
+cat('the median of p is: ', results$quantiles[5])
+cat('\n')
+cat('the credibility interval of p is: [', results$quantiles[1],',',results$quantiles[9],']')
+```
+
+The results and the values obtained from this method are very similar to the ones obtained with the theoretical methods
+
+```{r}
+
+cat('the mean of the predicted data y is: ',results$statistics[2])
+cat('\n')
+sd<-results$statistics[4]
+cat('the variance of the predicted data y is: ', sd*sd)
+cat('\n')
+cat('the median of predicted data is: ', results$quantiles[6])
+cat('\n')
+cat('the credibility interval of predicted data is: [', results$quantiles[2],',',results$quantiles[10],']')
+
+```
+
+
+
+#Exercise 5
+
+I create the data in order to calculate the posterior. In order to do that I create two datasets of the same length of the two original datasets with all the values equal to 0. Then I randomly select the needed number of indexes and I assign to that indexes a value equal to 1,2,3,4 or 5.The number of times a specific value appears is given by the original datasets. For example in the first observations there are 65 observations equal to 1. So in the reproduced artificial dataset the number 1 will appear 65 times. 
+
+
+RESULTS OBTAINED WITH THE OBSERVATION_1
+```{r}
+data <- NULL
+obs_1<-rep(0,109+65+22+3+1+0)
+
+
+X <- obs_1
+
+i<-0
+while (i<65) {
+  ind_1<-sample(109+65+22+3+1,1)
+  
+  if( X[ind_1]==0 ){
+    
+    X[ind_1]=1
+    i<-i+1
+  }
+}
+
+i<-0
+while (i<22) {
+  ind_2<-sample(109+65+22+3+1,1)
+
+  if( X[ind_2]==0 ){
+    
+    X[ind_2]=2
+    i<-i+1
+  }
+    
+}
+
+i<-0
+while (i<3) {
+  ind_3<-sample(109+65+22+3+1,1)
+  if(X[ind_3]==0){
+    
+    X[ind_3]=3
+    i<-i+1
+  }
+    
+}
+
+i<-0
+while (i<1) {
+  ind_4<-sample(109+65+22+3+1,1)
+  if(X[ind_4]==0){
+    
+    X[ind_4]=4
+    i<-i+1
+  }
+    
+}
+
+
+
+data$X <-X
+data$n <- length(X)#109+65+22+3+1+0
+data$n_next <- 100
+data$quant <- seq(-1,6,by=1/100)
+```
+
+##uniform prior (observation 1)
+Here the results obtained with the uniform prior are shown
+```{r}
+jagsModel <- jags.model("model5_1.bug",data=data)
+update(jagsModel,1000)
+```
+
+```{r}
+chain <- coda.samples(jagsModel, c("mu",'y'), n.iter=20000) 
+print(summary(chain))
+```
+
+
+```{r}
+plot(chain[,1], col="darkgreen")
+title('trace of mu and density of mu (uniform prior)')
+```
+
+
+```{r}
+df<-as.data.frame(as.mcmc(chain))
+```
+
+```{r}
+plot(df$y, col="darkgreen",type='l',ylab='')
+title('trace of predicted data y(uniform prior)')
+ty <- table(df$y)
+barplot(ty, col="darkgreen", main ='',xlab='y',ylab = 'frequency')
+title('histogram of predicted data y (uniform prior)')
+
+```
+
+```{r}
+results<-(summary(chain))
+results
+```
+
+
+```{r}
+cat('the mean of mu is: ',results$statistics[1])
+cat('\n')
+sd<-results$statistics[3]
+cat('the variance of mu is: ', sd*sd)
+cat('\n')
+cat('the median of mu is: ', results$quantiles[5])
+cat('\n')
+cat('the credibility interval of mu is: [', results$quantiles[1],',',results$quantiles[9],']')
+```
+
+The results and the values obtained from this method are very similar to the ones obtained with the theoretical methods
+
+```{r}
+
+cat('the mean of the predicted data y is: ',results$statistics[2])
+cat('\n')
+sd<-results$statistics[4]
+cat('the variance of the predicted data y is: ', sd*sd)
+cat('\n')
+cat('the median of predicted data is: ', results$quantiles[6])
+cat('\n')
+cat('the credibility interval of predicted data is: [', results$quantiles[2],',',results$quantiles[10],']')
+
+```
+
+##jeffrey prior (observation 1)
+Here the results obtained with the jeffrey prior are shown
+
+```{r}
+jagsModel <- jags.model("model5_2.bug",data=data)
+update(jagsModel,1000)
+```
+
+```{r}
+chain <- coda.samples(jagsModel, c("mu",'y'), n.iter=20000) 
+print(summary(chain))
+```
+
+```{r}
+plot(chain[,1], col="darkred")
+title('trace of mu and density of mu (jeffrey prior)')
+```
+
+```{r}
+df<-as.data.frame(as.mcmc(chain))
+```
+
+```{r}
+plot(df$y, col="darkred",type='l',ylab='')
+title('trace of predicted data y(jeffrey prior)')
+ty <- table(df$y)
+barplot(ty, col="darkred", main ='',xlab='y',ylab = 'frequency')
+title('histogram of predicted data y (jeffrey prior)')
+
+```
+
+```{r}
+results<-(summary(chain))
+results
+```
+
+
+```{r}
+cat('the mean of mu is: ',results$statistics[1])
+cat('\n')
+sd<-results$statistics[3]
+cat('the variance of mu is: ', sd*sd)
+cat('\n')
+cat('the median of mu is: ', results$quantiles[5])
+cat('\n')
+cat('the credibility interval of mu is: [', results$quantiles[1],',',results$quantiles[9],']')
+```
+
+The results and the values obtained from this method are very similar to the ones obtained with the theoretical methods
+
+```{r}
+
+cat('the mean of the predicted data y is: ',results$statistics[2])
+cat('\n')
+sd<-results$statistics[4]
+cat('the variance of the predicted data y is: ', sd*sd)
+cat('\n')
+cat('the median of predicted data is: ', results$quantiles[6])
+cat('\n')
+cat('the credibility interval of predicted data is: [', results$quantiles[2],',',results$quantiles[10],']')
+
+```
+
+
+
+RESULTS OBTAINED WITH THE OBSERVATION_2
+
+##uniform prior (observation 2)
+```{r}
+data <- NULL
+obs_2<-rep(0,144+91+32+11+2)
+
+X <- obs_2
+
+i<-0
+while (i<91) {
+  ind_1<-sample(144+91+32+11+2,1)
+  
+  if( X[ind_1]==0 ){
+    
+    X[ind_1]=1
+    i<-i+1
+  }
+}
+
+i<-0
+while (i<32) {
+  ind_2<-sample(144+91+32+11+2,1)
+
+  if( X[ind_2]==0 ){
+    
+    X[ind_2]=2
+    i<-i+1
+  }
+    
+}
+
+i<-0
+while (i<11) {
+  ind_3<-sample(144+91+32+11+2,1)
+  if(X[ind_3]==0){
+    
+    X[ind_3]=3
+    i<-i+1
+  }
+    
+}
+
+i<-0
+while (i<2) {
+  ind_4<-sample(144+91+32+11+2,1)
+  if(X[ind_4]==0){
+    
+    X[ind_4]=4
+    i<-i+1
+  }
+    
+}
+
+
+
+data$X <-X
+data$n <- length(X)#144+91+32+11+2
+
+
+```
+
+Here the results obtained with the uniform prior are shown
+```{r}
+jagsModel <- jags.model("model5_1.bug",data=data)
+update(jagsModel,1000)
+```
+
+
+```{r}
+chain <- coda.samples(jagsModel, c("mu","y"), n.iter=20000) 
+print(summary(chain))
+```
+
+
+```{r}
+plot(chain[,1], col="darkgreen")
+title('trace of mu and density of mu (uniform prior)')
+```
+
+```{r}
+df<-as.data.frame(as.mcmc(chain))
+```
+
+```{r}
+plot(df$y, col="darkgreen",type='l',ylab='')
+title('trace of predicted data y(juniform prior)')
+ty <- table(df$y)
+barplot(ty, col="darkgreen", main ='',xlab='y',ylab = 'frequency')
+title('histogram of predicted data y (uniform prior)')
+
+```
+
+```{r}
+results<-(summary(chain))
+results
+```
+
+
+```{r}
+cat('the mean of mu is: ',results$statistics[1])
+cat('\n')
+sd<-results$statistics[3]
+cat('the variance of mu is: ', sd*sd)
+cat('\n')
+cat('the median of mu is: ', results$quantiles[5])
+cat('\n')
+cat('the credibility interval of mu is: [', results$quantiles[1],',',results$quantiles[9],']')
+```
+
+The results and the values obtained from this method are very similar to the ones obtained with the theoretical methods
+
+```{r}
+
+cat('the mean of the predicted data y is: ',results$statistics[2])
+cat('\n')
+sd<-results$statistics[4]
+cat('the variance of the predicted data y is: ', sd*sd)
+cat('\n')
+cat('the median of predicted data is: ', results$quantiles[6])
+cat('\n')
+cat('the credibility interval of predicted data is: [', results$quantiles[2],',',results$quantiles[10],']')
+
+```
+
+##jeffrey prior(observation 2)
+Here the results obtained with the jeffrey prior are shown
+
+```{r}
+jagsModel <- jags.model("model5_2.bug",data=data)
+update(jagsModel,1000)
+```
+
+```{r}
+chain <- coda.samples(jagsModel, c("mu","y"), n.iter=20000) 
+print(summary(chain))
+```
+
+
+```{r}
+plot(chain[,1], col="darkred")
+title('trace of mu and density of mu (jeffrey prior)')
+```
+
+```{r}
+df<-as.data.frame(as.mcmc(chain))
+```
+
+```{r}
+plot(df$y, col="darkred",type='l',ylab='')
+title('trace of predicted data y(jeffrey prior)')
+ty <- table(df$y)
+barplot(ty, col="darkred", main ='',xlab='y',ylab = 'frequency')
+title('histogram of predicted data y (jeffrey prior)')
+
+```
+
+```{r}
+results<-(summary(chain))
+results
+```
+
+
+```{r}
+cat('the mean of mu is: ',results$statistics[1])
+cat('\n')
+sd<-results$statistics[3]
+cat('the variance of mu is: ', sd*sd)
+cat('\n')
+cat('the median of mu is: ', results$quantiles[5])
+cat('\n')
+cat('the credibility interval of mu is: [', results$quantiles[1],',',results$quantiles[9],']')
+```
+
+The results and the values obtained from this method are very similar to the ones obtained with the theoretical methods
+
+```{r}
+
+cat('the mean of the predicted data y is: ',results$statistics[2])
+cat('\n')
+sd<-results$statistics[4]
+cat('the variance of the predicted data y is: ', sd*sd)
+cat('\n')
+cat('the median of predicted data is: ', results$quantiles[6])
+cat('\n')
+cat('the credibility interval of predicted data is: [', results$quantiles[2],',',results$quantiles[10],']')
+
+```
+
+
+#Exercise 6
+
+The method used to create the data is the same of the Exercise 4. 
+```{r}
+data <- NULL
+X<-rep(0,116)
+index<-sample(116,11)
+for (i in index) {
+  
+  X[i]=1
+}
+
+data$X <-X
+data$n_next <- 100
+```
+
+
+```{r}
+jagsModel <- jags.model("model6.bug",data=data)
+update(jagsModel,1000)
+```
+
+```{r}
+chain <- coda.samples(jagsModel, c("p","y"), n.iter=20000) 
+print(summary(chain))
+```
+
+
+```{r}
+plot(chain[,1], col="darkorchid")
+title('trace of p and density of p')
+```
+
+```{r}
+df<-as.data.frame(as.mcmc(chain))
+```
+
+```{r}
+plot(df$y, col="darkorchid",type='l',ylab='')
+title('trace of predicted data y')
+ty <- table(df$y)
+barplot(ty, col="darkorchid", main ='',xlab='y',ylab = 'frequency')
+title('histogram of predicted data y')
+
+```
+
+```{r}
+results<-(summary(chain))
+results
+```
+
+
+```{r}
+cat('the mean of p is: ',results$statistics[1])
+cat('\n')
+sd<-results$statistics[3]
+cat('the variance of p is: ', sd*sd)
+cat('\n')
+cat('the median of p is: ', results$quantiles[5])
+cat('\n')
+cat('the credibility interval of p is: [', results$quantiles[1],',',results$quantiles[9],']')
+```
+
+The results and the values obtained from this method are very similar to the ones obtained with the theoretical methods
+
+```{r}
+
+cat('the mean of the predicted data y is: ',results$statistics[2])
+cat('\n')
+sd<-results$statistics[4]
+cat('the variance of the predicted data y is: ', sd*sd)
+cat('\n')
+cat('the median of predicted data is: ', results$quantiles[6])
+cat('\n')
+cat('the credibility interval of predicted data is: [', results$quantiles[2],',',results$quantiles[10],']')
+
+```
+
+
+
+
+
